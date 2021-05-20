@@ -1,0 +1,14 @@
+{
+  "name": "synchronizer",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "repository": "",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "axios": "^0.21.1"
+  }
+}
