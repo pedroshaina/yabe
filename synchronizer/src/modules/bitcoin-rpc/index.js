@@ -1,17 +1,17 @@
 const crypto = require('crypto')
-const Axios = require('axios')
+const fetch = require('node-fetch').default
 
 const appConfig = require('../config')
 
-const axiosConfig = {
+const defaultRequestConfig = {
     method: 'POST',
-    url: appConfig.rpc.uri,
     auth: {
         username: appConfig.rpc.username,
         password: appConfig.rpc.password
     },
     headers: {
-        'Content-Type': 'text/plain'
+        'Content-Type': 'text/plain',
+        'Authorization': `Basic ${Buffer.from(`${appConfig.rpc.username}:${appConfig.rpc.password}`).toString('base64')}`
     }
 }
 
@@ -24,18 +24,38 @@ const createRequestBody = (rpcMethodName, params) => {
     })
 }
 
-const createAxiosRequest = async (rpcMethodName, params) => {
-    const requestBody = createRequestBody(rpcMethodName, params)
-    return Axios({
-        ...axiosConfig,
-        data: requestBody
-    })
-}
 
 const call = async (rpcMethodName, ...params) => {
-    return await createAxiosRequest(rpcMethodName, [...params])
+    const requestBody = createRequestBody(rpcMethodName, params)
+
+    const response = await fetch(appConfig.rpc.uri, {
+        ...defaultRequestConfig,
+        body: requestBody
+    })
+    
+    return response.json()
 }
 
+const getBlockCount = async () => {
+    const res = await call('getblockcount')
+
+    return res.result
+}
+
+const getBlockHash = async (blockHeight) => {
+    const res = await call('getblockhash', blockHeight)
+
+    return res.result
+}
+
+const getBlockWithTransactions = async (blockHash) => {
+    const res = await call('getblock', blockHash, 2)
+
+    return res.result
+}
+ 
 module.exports = {
-    call
+    getBlockCount,
+    getBlockHash,
+    getBlockWithTransactions
 }
