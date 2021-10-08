@@ -9,6 +9,9 @@
     "start": "node src/index.js"
   },
   "dependencies": {
-    "axios": "^0.21.1"
+    "axios": "^0.21.1",
+    "knex": "^0.95.11",
+    "node-fetch": "^2.0.0",
+    "pg": "^8.7.1"
   }
 }
