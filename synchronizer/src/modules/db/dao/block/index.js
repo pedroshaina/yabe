@@ -1,4 +1,4 @@
-const knex = require('../knex')
+const knex = require('../../knex')
 
 const getMaxBlockHeight = async () => {
     const [res] = await knex('block').max('height')
@@ -11,9 +11,8 @@ const getMaxBlockHeight = async () => {
 }
 
 const insertBlockInTrans = async (dbTrx, block) => {
-    await knex('block')
+    await dbTrx('block')
         .insert(block)
-        .transacting(dbTrx)
 }
 
 const insertBlock = async (block, transactions) => {

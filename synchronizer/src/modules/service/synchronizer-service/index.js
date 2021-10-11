@@ -12,25 +12,22 @@ const synchronizerFactory = (blockDao, transactionDao, bitcoinRpc, dbTrxManager)
             const blockHash = await bitcoinRpc.getBlockHash(nextHeightToBeIndexed)
     
             const {
-                txs,
+                tx: txs,
                 ...block
             } = await bitcoinRpc.getBlockWithTransactions(blockHash)
+
+            console.log(block)
+            console.log(txs)
     
             const blockStats = await bitcoinRpc.getBlockStats(nextHeightToBeIndexed)
     
             const blockModel = buildBlockModel(block, blockStats);
             const transactionsModel = buildTransactionsModel(txs, blockHash)
 
-            const dbTrx = dbTrxManager.newTrans()
-
-            try {
+            await dbTrxManager.executeInTrans(async dbTrx => {
                 await blockDao.insertBlockInTrans(dbTrx, blockModel)
-                await transactionDao.insertTransactionInTras(dbTrx, transactionsModel)    
-            
-                await dbTrxManager.commitTrans(dbTrx)
-            } catch (err) {
-                await dbTrxManager.rollbackTrans(dbTrx)
-            }
+                await transactionDao.insertTransactionsInTrans(dbTrx, transactionsModel)
+            })
         }
     }
 
@@ -106,6 +103,7 @@ const synchronizerFactory = (blockDao, transactionDao, bitcoinRpc, dbTrxManager)
                 vsize,
                 weight,
                 locktime,
+                version,
                 fee: feeValue
             } = transaction
 
@@ -116,6 +114,7 @@ const synchronizerFactory = (blockDao, transactionDao, bitcoinRpc, dbTrxManager)
                 vsize,
                 weight,
                 locktime,
+                version,
                 feeValue,
                 blockHash,
                 isCoinbase,
@@ -141,13 +140,13 @@ const synchronizerFactory = (blockDao, transactionDao, bitcoinRpc, dbTrxManager)
             const witnessData = hasWitness? input.txinwitness : null
 
             const {
-                txid: sourceOutputTxId,
+                txid: sourceOutputTxid,
                 vout: sourceOutputIndex,
                 sequence
             } = input
 
             return {
-                sourceOutputTxId,
+                sourceOutputTxid,
                 sourceOutputIndex,
                 hasWitness,
                 witnessData,
@@ -164,7 +163,7 @@ const synchronizerFactory = (blockDao, transactionDao, bitcoinRpc, dbTrxManager)
                 asm: output.scriptPubKey.asm,
                 hex: output.scriptPubKey.hex,
                 type: output.scriptPubKey.type,
-                address: output.scriptPubKey.address? output.scriptPubKey.address : null
+                address: getAddress(output.scriptPubKey)
             } : null
 
             const {
@@ -178,6 +177,16 @@ const synchronizerFactory = (blockDao, transactionDao, bitcoinRpc, dbTrxManager)
                 scriptPubKey
             }
         })
+    }
+
+    const getAddress = (scriptPubKey) => {
+        if (scriptPubKey.adresses)
+            return [addresses]
+        
+        if (scriptPubKey.address)
+            return scriptPubKey.address
+
+        return null
     }
 
     return {

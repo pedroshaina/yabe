@@ -3,7 +3,7 @@ exports.up = async function (knex) {
     const tableExists = await knex.schema.hasTable('block')
 
     if (!tableExists) {
-        return knex.schema.createTable('block', table => {
+        return await knex.schema.createTable('block', table => {
             table.increments('id').primary()
             table.string('hash').notNullable()
             table.bigInteger('confirmations').notNullable()
@@ -30,5 +30,5 @@ exports.up = async function (knex) {
 };
 
 exports.down = async function (knex) {
-    return knex.schema.dropTableIfExists('block')
+    return await knex.schema.dropTableIfExists('block')
 };

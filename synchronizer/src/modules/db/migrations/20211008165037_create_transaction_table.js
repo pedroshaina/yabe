@@ -40,6 +40,10 @@ exports.up = async function(knex) {
 
         promises.push(knex.schema.createTable('transaction_output', table => {
             table.increments('id').primary()
+            table.integer('transaction_id')
+                .unsigned()
+                .references('transaction.id')
+                .notNullable()
             table.decimal('value', null, null).notNullable()
             table.bigInteger('index').notNullable()
             table.integer('script_pub_key_id')
@@ -70,7 +74,7 @@ exports.up = async function(knex) {
             table.string('hex').notNullable()
         }))
         
-        return Promise.all(promises)
+        return await Promise.all(promises)
     }
 };
 
@@ -84,5 +88,5 @@ exports.down = async function(knex) {
     promises.push(knex.schema.dropTableIfExists('script_sig'))
     promises.push(knex.schema.dropTableIfExists('script_pub_key'))
 
-    return Promise.all(promises)
+    return await Promise.all(promises)
 };

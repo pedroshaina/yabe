@@ -16,6 +16,7 @@ module.exports = {
       tableName: 'knex_migrations', 
       directory: `${__dirname}/modules/db/migrations`
     },
+    useNullAsDefault: true,
 
     ...knexSnakeCaseMappers()
   }

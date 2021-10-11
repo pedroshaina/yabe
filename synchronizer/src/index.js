@@ -1,10 +1,14 @@
 const synchronizerFactory = require('./modules/service/synchronizer-service')
 
-const blockDao = require('./modules/db/block-dao')
-const transactionDao = require('./modules/db/transaction-dao')
+const blockDao = require('./modules/db/dao/block')
+const transactionDao = require('./modules/db/dao/transaction')
 const bitcoinRpc = require('./modules/bitcoin-rpc')
 const dbTrxManager = require('./modules/db/utils/dbTrxManager')
 
 const synchronizer = synchronizerFactory(blockDao, transactionDao, bitcoinRpc, dbTrxManager)
 
-synchronizer.synchronize()
+let timerId = setTimeout(synch = async () => {
+    await synchronizer.synchronize()
+
+    timerId = setTimeout(synch, 300)
+}, 300)
