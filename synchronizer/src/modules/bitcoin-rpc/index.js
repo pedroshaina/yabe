@@ -53,9 +53,16 @@ const getBlockWithTransactions = async (blockHash) => {
 
     return res.result
 }
- 
+
+const getBlockStats = async (blockHeight) => {
+    const res = await call('getblockstats', blockHeight)
+
+    return res.result
+}
+  
 module.exports = {
     getBlockCount,
     getBlockHash,
-    getBlockWithTransactions
+    getBlockWithTransactions,
+    getBlockStats
 }

@@ -1,18 +1,10 @@
-const bitcoinRPC = require('./modules/bitcoin-rpc')
+const synchronizerFactory = require('./modules/service/synchronizer-service')
 
-async function loadLastSynchronizedBlock() {
-    console.log('Getting last block height from node')
-    const lastLoadedBlockHeight = await bitcoinRPC.getBlockCount()
-    console.log('Last block height from node', lastLoadedBlockHeight)
+const blockDao = require('./modules/db/block-dao')
+const transactionDao = require('./modules/db/transaction-dao')
+const bitcoinRpc = require('./modules/bitcoin-rpc')
+const dbTrxManager = require('./modules/db/utils/dbTrxManager')
 
-    console.log(`Getting block hash with height ${lastLoadedBlockHeight}`)
-    const lastLoadedBlockHash = await bitcoinRPC.getBlockHash(lastLoadedBlockHeight)
-    console.log('Block hash', lastLoadedBlockHash)
+const synchronizer = synchronizerFactory(blockDao, transactionDao, bitcoinRpc, dbTrxManager)
 
-    console.log('Getting block with transactions')
-    const lastLoadedBlock = await bitcoinRPC.getBlockWithTransactions(lastLoadedBlockHash)
-
-    console.log(lastLoadedBlock)
-}
-
-loadLastSynchronizedBlock()
+synchronizer.synchronize()
