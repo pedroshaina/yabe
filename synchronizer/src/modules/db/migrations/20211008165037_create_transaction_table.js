@@ -32,7 +32,7 @@ exports.up = async function(knex) {
             table.string('source_output_txid')
             table.bigInteger('source_output_index')
             table.boolean('has_witness').notNullable()
-            table.string('coinbase_data')
+            table.text('coinbase_data')
             table.integer('script_sig_id')
                 .references('script_sig.id')
             table.bigInteger('sequence')
@@ -53,14 +53,14 @@ exports.up = async function(knex) {
 
         promises.push(knex.schema.createTable('script_sig', table => {
             table.increments('id').primary()
-            table.string('asm').notNullable()
-            table.string('hex').notNullable()
+            table.text('asm').notNullable()
+            table.text('hex').notNullable()
         }))
 
         promises.push(knex.schema.createTable('script_pub_key', table => {
             table.increments('id').primary()
-            table.string('asm').notNullable()
-            table.string('hex').notNullable()
+            table.text('asm').notNullable()
+            table.text('hex').notNullable()
             table.string('address')
             table.string('type').notNullable()
         }))
@@ -71,7 +71,7 @@ exports.up = async function(knex) {
                 .unsigned()
                 .references('transaction_input.id')
                 .notNullable()
-            table.string('hex').notNullable()
+            table.text('hex').notNullable()
         }))
         
         return await Promise.all(promises)

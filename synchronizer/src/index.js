@@ -10,5 +10,5 @@ const synchronizer = synchronizerFactory(blockDao, transactionDao, bitcoinRpc, d
 let timerId = setTimeout(synch = async () => {
     await synchronizer.synchronize()
 
-    timerId = setTimeout(synch, 300)
-}, 300)
+    timerId = setTimeout(synch)
+})
