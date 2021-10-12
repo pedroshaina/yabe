@@ -1,14 +1,17 @@
 services:
   synchronizer-db:
+    container_name: synchronizer-db
     image: postgres:latest
     ports:
       - 5432:5432
     env_file:
       .env
   block-synchronizer:
+    container_name: block-synchronizer
     build:
       dockerfile:  ./docker/Dockerfile
       context: ./synchronizer
     env_file:
       .env
-  
+    depends_on:
+      - synchronizer-db

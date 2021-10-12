@@ -1,5 +1,7 @@
 const crypto = require('crypto')
 const fetch = require('node-fetch').default
+const logger = require('../logger')
+const AbortController = require('abort-controller')
 
 const appConfig = require('../config')
 
@@ -28,34 +30,57 @@ const createRequestBody = (rpcMethodName, params) => {
 const call = async (rpcMethodName, ...params) => {
     const requestBody = createRequestBody(rpcMethodName, params)
 
-    const response = await fetch(appConfig.rpc.uri, {
-        ...defaultRequestConfig,
-        body: requestBody
-    })
+    const requestTimeoutMs = appConfig.rpc.requestTimeoutMs || 30000
+
+    const controller = new AbortController()
+
+    const timeout = setTimeout(() => {
+        controller.abort()
+    }, requestTimeoutMs)
+
+    try {
+        const response = await fetch(appConfig.rpc.uri, {
+            ...defaultRequestConfig,
+            signal: controller.signal,
+            body: requestBody
+        })
+        
+        const responseJson = await response.json()
+        
+        if (!responseJson.result && !!responseJson.error) {
+            throw new Error(`Received error response from bitcoin-rpc: ${responseJson.error.message}`)
+        }
     
-    return response.json()
+        return responseJson.result
+    } catch (err) {
+        if (err.name == 'AbortError') {
+            throw new Error(`RPC call to method '${rpcMethodName}' timed out after ${requestTimeoutMs}ms`)
+        }        
+        throw err
+    } finally {
+        clearTimeout(timeout)
+    }
 }
 
 const getBlockCount = async () => {
-    const res = await call('getblockcount')
-
-    return res.result
+    return await call('getblockcount')
 }
 
 const getBlockHash = async (blockHeight) => {
-    const res = await call('getblockhash', blockHeight)
-
-    return res.result
+    return await call('getblockhash', blockHeight)
 }
 
 const getBlockWithTransactions = async (blockHash) => {
-    const res = await call('getblock', blockHash, 2)
-
-    return res.result
+    return await call('getblock', blockHash, 2)
 }
- 
+
+const getBlockStats = async (blockHeight) => {
+    return await call('getblockstats', blockHeight)
+}
+  
 module.exports = {
     getBlockCount,
     getBlockHash,
-    getBlockWithTransactions
+    getBlockWithTransactions,
+    getBlockStats
 }

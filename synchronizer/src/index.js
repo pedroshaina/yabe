@@ -1,18 +1,22 @@
-const bitcoinRPC = require('./modules/bitcoin-rpc')
+const logger = require('./modules/logger')
 
-async function loadLastSynchronizedBlock() {
-    console.log('Getting last block height from node')
-    const lastLoadedBlockHeight = await bitcoinRPC.getBlockCount()
-    console.log('Last block height from node', lastLoadedBlockHeight)
+const synchronizerFactory = require('./modules/service/synchronizer-service')
 
-    console.log(`Getting block hash with height ${lastLoadedBlockHeight}`)
-    const lastLoadedBlockHash = await bitcoinRPC.getBlockHash(lastLoadedBlockHeight)
-    console.log('Block hash', lastLoadedBlockHash)
+const appConfig = require('./modules/config')
+const blockDao = require('./modules/db/dao/block')
+const transactionDao = require('./modules/db/dao/transaction')
+const bitcoinRpc = require('./modules/bitcoin-rpc')
+const dbTrxManager = require('./modules/db/utils/dbTrxManager')
 
-    console.log('Getting block with transactions')
-    const lastLoadedBlock = await bitcoinRPC.getBlockWithTransactions(lastLoadedBlockHash)
+const synchronizer = synchronizerFactory(blockDao, transactionDao, bitcoinRpc, dbTrxManager)
 
-    console.log(lastLoadedBlock)
-}
 
-loadLastSynchronizedBlock()
+let timerId = setTimeout(synch = async () => {
+    try {
+        await synchronizer.synchronize()
+        timerId = setTimeout(synch, appConfig.app.blockSynchIntervalMs)        
+    } catch (err) {
+        logger.error(`Error while attempting to index block... scheduling a new attempt. Reason: ${err.message}`, {...err})
+        timerId = setTimeout(synch, appConfig.app.blockSynchIntervalMs)
+    }
+}, appConfig.app.blockSynchIntervalMs)
