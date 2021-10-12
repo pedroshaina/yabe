@@ -9,9 +9,11 @@
     "start": "node src/index.js"
   },
   "dependencies": {
+    "abort-controller": "^3.0.0",
     "dotenv": "^10.0.0",
     "knex": "^0.95.11",
     "node-fetch": "^2.0.0",
-    "pg": "^8.7.1"
+    "pg": "^8.7.1",
+    "winston": "^3.3.3"
   }
 }

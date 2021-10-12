@@ -1,4 +1,5 @@
 const knex = require('../../knex')
+const logger = require('./../../../logger')
 
 const getMaxBlockHeight = async () => {
     const [res] = await knex('block').max('height')
@@ -7,10 +8,17 @@ const getMaxBlockHeight = async () => {
         return 0
     }
 
-    return new Number(res.max)
+    return res.max
 }
 
 const insertBlockInTrans = async (dbTrx, block) => {
+    const {
+        height,
+        hash
+    } = block
+
+    logger.info(`Indexing block height ${height} with hash '${hash}' `)
+
     await dbTrx('block')
         .insert(block)
 }
@@ -22,7 +30,6 @@ const insertBlock = async (block, transactions) => {
         await dbTrx.commit()
     } catch (err) {
         await dbTrx.rollback()
-        console.log(JSON.stringify(err))
         throw err
     }
 }

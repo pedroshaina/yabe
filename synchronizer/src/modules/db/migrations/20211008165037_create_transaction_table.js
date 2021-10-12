@@ -7,12 +7,14 @@ exports.up = async function(knex) {
 
         promises.push(knex.schema.createTable('transaction', table => {
             table.increments('id').primary()
-            table.string('txid').notNullable()
+            table.string('txid')
+                .unique()
+                .notNullable()
             table.string('hash').notNullable()
             table.bigInteger('size').notNullable()
             table.bigInteger('vsize').notNullable()
             table.bigInteger('weight').notNullable()
-            table.integer('version').notNullable()
+            table.integer('version').notNullable()  
             table.bigInteger('locktime').notNullable()
             table.string('block_hash').notNullable()
             table.boolean('is_coinbase').notNullable()
@@ -49,7 +51,7 @@ exports.up = async function(knex) {
             table.integer('script_pub_key_id')
                 .references('script_pub_key.id')
                 .notNullable()
-        }))
+        })) 
 
         promises.push(knex.schema.createTable('script_sig', table => {
             table.increments('id').primary()

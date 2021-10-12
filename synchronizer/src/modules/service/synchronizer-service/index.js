@@ -1,3 +1,5 @@
+const logger = require('./../../logger')
+
 const synchronizerFactory = (blockDao, transactionDao, bitcoinRpc, dbTrxManager) => {
 
     const synchronize = async () => {
@@ -5,22 +7,19 @@ const synchronizerFactory = (blockDao, transactionDao, bitcoinRpc, dbTrxManager)
         const lastNodeHeight = await bitcoinRpc.getBlockCount()
         const nextHeightToBeIndexed = 1 + lastIndexedHeight
         
-        console.log({lastIndexedHeight, lastNodeHeight})
-    
+        logger.info(`lastIndexedHeight ${lastIndexedHeight}, nextHeightToBeIndexed ${nextHeightToBeIndexed}, lastNodeHeight ${lastNodeHeight}`)
+
         if (lastNodeHeight >= nextHeightToBeIndexed) {
-            console.log('New block to be indexed', nextHeightToBeIndexed)
+            
             const blockHash = await bitcoinRpc.getBlockHash(nextHeightToBeIndexed)
-    
+
             const {
                 tx: txs,
                 ...block
             } = await bitcoinRpc.getBlockWithTransactions(blockHash)
 
-            console.log(block)
-            console.log(txs)
-    
             const blockStats = await bitcoinRpc.getBlockStats(nextHeightToBeIndexed)
-    
+
             const blockModel = buildBlockModel(block, blockStats);
             const transactionsModel = buildTransactionsModel(txs, blockHash)
 
@@ -88,12 +87,12 @@ const synchronizerFactory = (blockDao, transactionDao, bitcoinRpc, dbTrxManager)
             const inputCount = inputs.length
             const outputCount = outputs.length
 
-            //const totalInputValue = getInputValue(inputs)
-            const totalInputValue = 0
+            const totalInputValue = getTotalInputValue(inputs)
+
             const totalOutputValue = outputs
                 .map(output => output.value)
                 .reduce((partial, actual) => partial + actual, 0);
-            
+
             const isCoinbase = hasCoinbaseInput(inputs)
 
             const {
@@ -128,16 +127,30 @@ const synchronizerFactory = (blockDao, transactionDao, bitcoinRpc, dbTrxManager)
         })
     }
 
+    const getTotalInputValue = (inputs) => {
+        let totalInputValue = 0
+            
+        if (inputs && inputs.length) {
+            Promise.all(inputs.map(async input => {
+                return await getInputValue(input)
+            })).then(inputValues => {
+                totalInputValue = inputValues.reduce((partial, actual) => partial + actual, 0)
+            }).catch(err => logger.error('Error when retrieving total input value', {error: err}))
+        }
+        
+        return totalInputValue
+    }
+
     const hasCoinbaseInput = (inputs) => {
         return inputs.some(input => !!input.coinbaseData)
     }
 
     const mapTransactionInputs = (transaction) => {
         return transaction.vin.map(input => {
-            const scriptSig = input.scriptSig? { asm: input.scriptSig.asm, hex: input.scriptSig.hex } : null
-            const coinbaseData = input.coinbase? input.coinbase : null
+            const scriptSig = input.scriptSig ? { asm: input.scriptSig.asm, hex: input.scriptSig.hex } : null
+            const coinbaseData = input.coinbase ? input.coinbase : null
             const hasWitness = !!input.txinwitness
-            const witnessData = hasWitness? input.txinwitness : null
+            const witnessData = hasWitness ? input.txinwitness : null
 
             const {
                 txid: sourceOutputTxid,
@@ -159,7 +172,7 @@ const synchronizerFactory = (blockDao, transactionDao, bitcoinRpc, dbTrxManager)
 
     const mapTransactionOutputs = (transaction) => {
         return transaction.vout.map(output => {
-            const scriptPubKey = output.scriptPubKey? {
+            const scriptPubKey = output.scriptPubKey ? {
                 asm: output.scriptPubKey.asm,
                 hex: output.scriptPubKey.hex,
                 type: output.scriptPubKey.type,
@@ -179,10 +192,24 @@ const synchronizerFactory = (blockDao, transactionDao, bitcoinRpc, dbTrxManager)
         })
     }
 
-    const getAddress = (scriptPubKey) => {
-        if (scriptPubKey.adresses)
-            return [addresses]
+    const getInputValue = async (input) => {
+        if (!input.sourceOutputTxid) 
+            return 0
+
+        if (!input.sourceOutputIndex) 
+            return 0
+
+        const sourceOutputTx = await transactionDao.getFullTransactionByTxid(input.sourceOutputTxid)
         
+        const sourceOutput = sourceOutputTx.outputs.find(output => output.index === input.sourceOutputIndex)
+
+        return sourceOutput? sourceOutput.value : 0
+    }
+
+    const getAddress = (scriptPubKey) => {
+        if (scriptPubKey.addresses)
+            return [scriptPubKey.addresses]
+
         if (scriptPubKey.address)
             return scriptPubKey.address
 

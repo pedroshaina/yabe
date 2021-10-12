@@ -1,6 +1,11 @@
 // Update with your config settings.
 const appConfig = require('./modules/config')
 const { knexSnakeCaseMappers } = require('./modules/db/utils/identifierMapping')
+const pg = require('pg')
+
+pg.types.setTypeParser(pg.types.builtins.INT8, parseInt)
+pg.types.setTypeParser(pg.types.builtins.FLOAT8, parseFloat)
+pg.types.setTypeParser(pg.types.builtins.NUMERIC, parseFloat)
 
 module.exports = {
 
