@@ -18,7 +18,11 @@ const synchronizerFactory = (blockDao, transactionDao, bitcoinRpc, dbTrxManager)
                 ...block
             } = await bitcoinRpc.getBlockWithTransactions(blockHash)
 
-            const blockStats = await bitcoinRpc.getBlockStats(nextHeightToBeIndexed)
+            let blockStats = null
+
+            if (nextHeightToBeIndexed !== 0) { //skip genesis block
+                blockStats = await bitcoinRpc.getBlockStats(nextHeightToBeIndexed)
+            }
 
             const blockModel = buildBlockModel(block, blockStats);
             const transactionsModel = buildTransactionsModel(txs, blockHash)
@@ -51,9 +55,13 @@ const synchronizerFactory = (blockDao, transactionDao, bitcoinRpc, dbTrxManager)
             nextblockhash: nextBlockHash
         } = rpcBlock
 
-        const totalUtxoValue = rpcBlockStats.total_out / 100000000
-        const totalFeeValue = rpcBlockStats.totalfee / 100000000
-        const rewardValue = rpcBlockStats.subsidy / 100000000
+        const blockStats = getBlockStats(rpcBlockStats, height)
+
+        const {
+            totalUtxoValue,
+            totalFeeValue,
+            rewardValue
+        } = blockStats
 
         return {
             hash,
@@ -214,6 +222,30 @@ const synchronizerFactory = (blockDao, transactionDao, bitcoinRpc, dbTrxManager)
             return scriptPubKey.address
 
         return null
+    }
+
+    const getBlockStats = (rpcBlockStats, blockHeight) => {
+        //genesis block special treatment
+        if (blockHeight === 0) {
+            return {
+                totalUtxoValue: 50,
+                totalFeeValue: 0,
+                rewardValue: 50
+            }
+        }
+        if (!rpcBlockStats) {
+            return {
+                totalUtxoValue: 0,
+                totalFeeValue: 0,
+                rewardValue: 0
+            }
+        }
+
+        return {
+            totalUtxoValue: (rpcBlockStats.total_out || 0) / 100000000,
+            totalFeeValue: (rpcBlockStats.totalfee || 0) / 100000000,
+            rewardValue: (rpcBlockStats.subsidy || 0) / 100000000
+        }
     }
 
     return {

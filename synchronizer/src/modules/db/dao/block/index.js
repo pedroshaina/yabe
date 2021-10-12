@@ -4,8 +4,8 @@ const logger = require('./../../../logger')
 const getMaxBlockHeight = async () => {
     const [res] = await knex('block').max('height')
 
-    if (!res.max) {
-        return 0
+    if (res.max === null || res.max === undefined) {
+        return -1
     }
 
     return res.max
