@@ -2,11 +2,13 @@ const logger = require('./modules/logger')
 
 const synchronizerFactory = require('./modules/service/synchronizer-service')
 
+const knex = require('./modules/db/knex')
 const appConfig = require('./modules/config')
-const blockDao = require('./modules/db/dao/block')
-const transactionDao = require('./modules/db/dao/transaction')
 const bitcoinRpc = require('./modules/bitcoin-rpc')
-const dbTrxManager = require('./modules/db/utils/dbTrxManager')
+
+const dbTrxManager = require('./modules/db/utils/dbTrxManager')(knex)
+const blockDao = require('./modules/db/dao/block')(knex, logger)
+const transactionDao = require('./modules/db/dao/block')(knex, logger)
 
 const synchronizer = synchronizerFactory(blockDao, transactionDao, bitcoinRpc, dbTrxManager)
 

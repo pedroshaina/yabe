@@ -10,7 +10,7 @@ services:
     container_name: block-synchronizer
     build:
       dockerfile:  ./docker/Dockerfile
-      context: ./synchronizer
+      context: ./explorer-backend/block-synchronizer
     env_file:
       .env
     depends_on:
