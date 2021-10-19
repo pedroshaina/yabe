@@ -15,3 +15,14 @@ services:
       .env
     depends_on:
       - synchronizer-db
+  explorer-api:
+    container_name: explorer-api
+    build:
+      dockerfile:  ./docker/Dockerfile
+      context: ./explorer-backend/explorer-api
+    ports:
+      - 8080:8080
+    env_file:
+      .env
+    depends_on:
+      - synchronizer-db
