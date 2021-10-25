@@ -8,7 +8,7 @@ const bitcoinRpc = require('./modules/bitcoin-rpc')
 
 const dbTrxManager = require('./modules/db/utils/dbTrxManager')(knex)
 const blockDao = require('./modules/db/dao/block')(knex, logger)
-const transactionDao = require('./modules/db/dao/block')(knex, logger)
+const transactionDao = require('./modules/db/dao/transaction')(knex, logger)
 
 const synchronizer = synchronizerFactory(blockDao, transactionDao, bitcoinRpc, dbTrxManager)
 
