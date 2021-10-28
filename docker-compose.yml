@@ -1,28 +1,43 @@
 services:
-  synchronizer-db:
-    container_name: synchronizer-db
+  yabe-db:
+    container_name: yabe-db
     image: postgres:latest
     ports:
       - 5432:5432
     env_file:
       .env
-  block-synchronizer:
-    container_name: block-synchronizer
+  yabe-indexer:
+    container_name: yabe-indexer
     build:
       dockerfile:  ./docker/Dockerfile
-      context: ./explorer-backend/block-synchronizer
+      context: ./yabe-backend/yabe-indexer
     env_file:
       .env
     depends_on:
-      - synchronizer-db
-  explorer-api:
-    container_name: explorer-api
+      - yabe-db
+      - bitcoin-core
+  yabe-api:
+    container_name: yabe-api
     build:
       dockerfile:  ./docker/Dockerfile
-      context: ./explorer-backend/explorer-api
+      context: ./yabe-backend/yabe-api
     ports:
       - 8080:8080
     env_file:
       .env
     depends_on:
-      - synchronizer-db
+      - yabe-db
+  bitcoin-core:
+    container_name: bitcoin-core
+    ports:
+      - 8332:8332
+    image: ruimarinho/bitcoin-core
+    env_file:
+      .env
+    command:
+      -server
+      -prune=${BITCOIND_PRUNE_SIZE}
+      -rpcbind=0.0.0.0
+      -rpcallowip=172.24.0.0/16
+      -rpcuser=${BITCOIND_RPC_USER}
+      -rpcpassword=${BITCOIND_RPC_PASSWORD}
