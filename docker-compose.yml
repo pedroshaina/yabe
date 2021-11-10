@@ -35,9 +35,9 @@ services:
     env_file:
       .env
     command:
-      -server
+      -server=1
       -prune=${BITCOIND_PRUNE_SIZE}
       -rpcbind=0.0.0.0
-      -rpcallowip=172.24.0.0/16
+      -rpcallowip=0.0.0.0/0
       -rpcuser=${BITCOIND_RPC_USER}
       -rpcpassword=${BITCOIND_RPC_PASSWORD}
