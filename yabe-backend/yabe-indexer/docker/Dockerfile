@@ -8,4 +8,6 @@ RUN yarn install
 
 COPY . .
 
-CMD ["yarn", "start"]
+RUN chmod +x ./docker/entrypoint.sh
+
+ENTRYPOINT [ "./docker/entrypoint.sh" ]
