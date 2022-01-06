@@ -25,7 +25,7 @@ const synchronizerFactory = (blockDao, transactionDao, bitcoinRpc, dbTrxManager)
             }
 
             const blockModel = buildBlockModel(block, blockStats);
-            const transactionsModel = await buildTransactionsModel(txs, blockHash)
+            const transactionsModel = buildTransactionsModel(txs, blockHash)
 
             await dbTrxManager.executeInTrans(async dbTrx => {
                 await blockDao.insertBlockInTrans(dbTrx, blockModel)
@@ -87,8 +87,8 @@ const synchronizerFactory = (blockDao, transactionDao, bitcoinRpc, dbTrxManager)
         }
     }
 
-    const buildTransactionsModel = async (transactions, blockHash) => {
-        return await Promise.all(transactions.map(async transaction => {
+    const buildTransactionsModel = (transactions, blockHash) => {
+        return transactions.map(transaction => {
             const inputs = mapTransactionInputs(transaction)
             const outputs = mapTransactionOutputs(transaction)
 
@@ -124,7 +124,7 @@ const synchronizerFactory = (blockDao, transactionDao, bitcoinRpc, dbTrxManager)
                 inputs,
                 outputs
             }
-        }))
+        })
     }
 
     const hasCoinbaseInput = (inputs) => {
