@@ -18,7 +18,7 @@ let timerId = setTimeout(synch = async () => {
         await synchronizer.synchronize()
         timerId = setTimeout(synch, appConfig.app.blockSynchIntervalMs)        
     } catch (err) {
-        logger.error(`Error while attempting to index block... scheduling a new attempt. Reason: ${err.message}`, {...err})
+        logger.error('Error while attempting to index block... scheduling a new attempt.  ', err)
         timerId = setTimeout(synch, appConfig.app.blockSynchIntervalMs)
     }
 }, appConfig.app.blockSynchIntervalMs)

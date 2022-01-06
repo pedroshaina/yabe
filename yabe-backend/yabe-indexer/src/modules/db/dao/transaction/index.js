@@ -29,6 +29,9 @@ module.exports = (knex, logger) => {
         const [transaction] = await knex('transaction')
             .where('transaction.txid', txid)
             .select('*')
+
+        if (!transaction)
+            return null
     
         const inputs = await retrieveTransactionInputs(transaction.id)
         const outputs = await retrieveTransactionOutputs(transaction.id)
