@@ -20,8 +20,6 @@ exports.up = async function(knex) {
             table.boolean('is_coinbase').notNullable()
             table.bigInteger('input_count').notNullable()
             table.bigInteger('output_count').notNullable()
-            table.decimal('total_input_value', null, null).notNullable()
-            table.decimal('total_output_value', null, null).notNullable()
             table.decimal('fee_value', null, null).notNullable()
         }));
 

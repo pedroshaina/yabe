@@ -95,12 +95,6 @@ const synchronizerFactory = (blockDao, transactionDao, bitcoinRpc, dbTrxManager)
             const inputCount = inputs.length
             const outputCount = outputs.length
 
-            const totalInputValue = getTotalInputValue(inputs)
-
-            const totalOutputValue = outputs
-                .map(output => output.value)
-                .reduce((partial, actual) => partial + actual, 0);
-
             const isCoinbase = hasCoinbaseInput(inputs)
 
             const {
@@ -127,26 +121,10 @@ const synchronizerFactory = (blockDao, transactionDao, bitcoinRpc, dbTrxManager)
                 isCoinbase,
                 inputCount,
                 outputCount,
-                totalInputValue,
-                totalOutputValue,
                 inputs,
                 outputs
             }
         })
-    }
-
-    const getTotalInputValue = (inputs) => {
-        let totalInputValue = 0
-            
-        if (inputs && inputs.length) {
-            Promise.all(inputs.map(async input => {
-                return await getInputValue(input)
-            })).then(inputValues => {
-                totalInputValue = inputValues.reduce((partial, actual) => partial + actual, 0)
-            }).catch(err => logger.error('Error when retrieving total input value', {error: err}))
-        }
-        
-        return totalInputValue
     }
 
     const hasCoinbaseInput = (inputs) => {
@@ -200,20 +178,6 @@ const synchronizerFactory = (blockDao, transactionDao, bitcoinRpc, dbTrxManager)
         })
     }
 
-    const getInputValue = async (input) => {
-        if (!input.sourceOutputTxid) 
-            return 0
-
-        if (!input.sourceOutputIndex) 
-            return 0
-
-        const sourceOutputTx = await transactionDao.getFullTransactionByTxid(input.sourceOutputTxid)
-        
-        const sourceOutput = sourceOutputTx.outputs.find(output => output.index === input.sourceOutputIndex)
-
-        return sourceOutput? sourceOutput.value : 0
-    }
-
     const getAddress = (scriptPubKey) => {
         if (scriptPubKey.addresses)
             return [scriptPubKey.addresses]
@@ -233,6 +197,7 @@ const synchronizerFactory = (blockDao, transactionDao, bitcoinRpc, dbTrxManager)
                 rewardValue: 50
             }
         }
+        
         if (!rpcBlockStats) {
             return {
                 totalUtxoValue: 0,
