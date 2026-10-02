@@ -1,3 +1,5 @@
 export * from './hex.js'
 export * from './network.js'
 export * from './sats.js'
+export * from './config.js'
+export * from './logger.js'
