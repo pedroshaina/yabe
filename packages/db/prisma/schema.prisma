@@ -1,0 +1,118 @@
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Bitcoin Core `scriptPubKey.type` values, verbatim.
+enum ScriptType {
+  nonstandard
+  pubkey
+  pubkeyhash
+  scripthash
+  multisig
+  nulldata
+  anchor
+  witness_v0_keyhash
+  witness_v0_scripthash
+  witness_v1_taproot
+  witness_unknown
+
+  @@map("script_type")
+}
+
+/// Canonical chain only. Hashes are the bytes of Core's display-order hex.
+model Block {
+  height       Int           @id
+  hash         Bytes         @unique @db.ByteA
+  prevHash     Bytes?        @map("prev_hash") @db.ByteA
+  merkleRoot   Bytes         @map("merkle_root") @db.ByteA
+  chainwork    Bytes         @db.ByteA
+  version      Int
+  bits         BigInt
+  nonce        BigInt
+  difficulty   Float
+  time         DateTime      @db.Timestamptz(0)
+  medianTime   DateTime      @map("median_time") @db.Timestamptz(0)
+  size         Int
+  strippedSize Int           @map("stripped_size")
+  weight       Int
+  txCount      Int           @map("tx_count")
+  subsidySats  BigInt        @map("subsidy_sats")
+  totalFeeSats BigInt        @map("total_fee_sats")
+  totalOutSats BigInt        @map("total_out_sats")
+  transactions Transaction[]
+
+  @@map("block")
+}
+
+/// tx_num = (block_height << 20) | position_in_block — computed by the indexer, see src/txnum.ts.
+model Transaction {
+  txNum       BigInt     @id @map("tx_num")
+  /// Not unique: mainnet has two BIP30 duplicate coinbase txids (heights 91842, 91880).
+  txid        Bytes      @db.ByteA
+  wtxid       Bytes?     @db.ByteA
+  blockHeight Int        @map("block_height")
+  block       Block      @relation(fields: [blockHeight], references: [height], onDelete: Restrict)
+  version     BigInt
+  locktime    BigInt
+  size        Int
+  vsize       Int
+  weight      Int
+  inputCount  Int        @map("input_count")
+  outputCount Int        @map("output_count")
+  isCoinbase  Boolean    @map("is_coinbase")
+  feeSats     BigInt?    @map("fee_sats")
+  inputs      TxInput[]
+  outputs     TxOutput[]
+
+  @@index([txid])
+  @@index([blockHeight])
+  @@map("transaction")
+}
+
+model TxOutput {
+  txNum        BigInt      @map("tx_num")
+  vout         Int
+  valueSats    BigInt      @map("value_sats")
+  scriptPubkey Bytes       @map("script_pubkey") @db.ByteA
+  scriptType   ScriptType  @map("script_type")
+  address      String?
+  transaction  Transaction @relation(fields: [txNum], references: [txNum], onDelete: Restrict)
+
+  @@id([txNum, vout])
+  @@map("tx_output")
+}
+
+model TxInput {
+  txNum       BigInt      @map("tx_num")
+  vin         Int
+  /// Null for coinbase inputs. No FK to tx_output on purpose (insert cost on huge tables, rollback order).
+  prevTxNum   BigInt?     @map("prev_tx_num")
+  prevVout    Int?        @map("prev_vout")
+  sequence    BigInt
+  /// Coinbase data for coinbase inputs.
+  scriptSig   Bytes       @map("script_sig") @db.ByteA
+  witness     Bytes[]     @db.ByteA
+  transaction Transaction @relation(fields: [txNum], references: [txNum], onDelete: Restrict)
+
+  @@id([txNum, vin])
+  @@unique([prevTxNum, prevVout], map: "tx_input_prevout_key")
+  @@map("tx_input")
+}
+
+/// Single row (id = 1) written by the indexer.
+model SyncState {
+  id               Int      @id @default(1)
+  network          String
+  nodeTipHeight    Int      @map("node_tip_height")
+  indexedTipHeight Int      @map("indexed_tip_height")
+  updatedAt        DateTime @map("updated_at") @db.Timestamptz(3)
+
+  @@map("sync_state")
+}

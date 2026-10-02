@@ -16,6 +16,8 @@
     "test": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
     "test:all": "vitest run",
+    "postinstall": "pnpm --filter @yabe/db generate",
+    "db:migrate": "pnpm --filter @yabe/db migrate:deploy",
     "rpcauth": "tsx --conditions=@yabe/source packages/bitcoin-rpc/src/cli/rpcauth.ts"
   },
   "devDependencies": {
