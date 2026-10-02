@@ -1,38 +1,85 @@
+name: yabe
+
+x-database-url: &database-url postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+
 services:
-  yabe-db:
-    container_name: yabe-db
-    image: postgres:latest
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql
     ports:
-      - 5432:5432
-    env_file: .env
-  yabe-indexer:
-    container_name: yabe-indexer
-    build:
-      dockerfile: ./docker/Dockerfile
-      context: ./yabe-backend/yabe-indexer
-    env_file: .env
+      - 127.0.0.1:5432:5432
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [yabe]
+
+  bitcoind:
+    image: bitcoin/bitcoin:31.1
+    command:
+      - -chain=${BITCOIN_NETWORK}
+      - -server=1
+      - -printtoconsole=1
+      - -rpcport=8332
+      - -rpcbind=0.0.0.0
+      - -rpcallowip=172.28.0.0/16
+      - -rpcauth=${BITCOIN_RPCAUTH}
+    volumes:
+      - bitcoin-data:/home/bitcoin/.bitcoin
+    ports:
+      - 127.0.0.1:8332:8332
+    networks: [yabe]
+
+  migrate:
+    build: { context: ., dockerfile: docker/Dockerfile, target: migrate }
+    environment:
+      DATABASE_URL: *database-url
     depends_on:
-      - yabe-db
-      - bitcoin-core
-  yabe-api:
-    container_name: yabe-api
-    build:
-      dockerfile: ./docker/Dockerfile
-      context: ./yabe-backend/yabe-api
-    ports:
-      - 8080:8080
-    env_file: .env
+      postgres: { condition: service_healthy }
+    networks: [yabe]
+
+  indexer:
+    build: { context: ., dockerfile: docker/Dockerfile, target: indexer }
+    restart: unless-stopped
+    stop_grace_period: 2m
+    environment:
+      DATABASE_URL: *database-url
+      BITCOIN_NETWORK: ${BITCOIN_NETWORK}
+      BITCOIN_RPC_URL: http://bitcoind:8332
+      BITCOIN_RPC_USER: ${BITCOIN_RPC_USER}
+      BITCOIN_RPC_PASSWORD: ${BITCOIN_RPC_PASSWORD}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
-      - yabe-db
-  bitcoin-core:
-    container_name: bitcoin-core
+      migrate: { condition: service_completed_successfully }
+      bitcoind: { condition: service_started }
+    networks: [yabe]
+
+  api:
+    build: { context: ., dockerfile: docker/Dockerfile, target: api }
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: *database-url
+      API_PORT: '8080'
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
     ports:
-      - 8332:8332
-    image: ruimarinho/bitcoin-core
-    env_file: .env
-    command: -server=1
-      -prune=${BITCOIND_PRUNE_SIZE_MB}
-      -rpcbind=0.0.0.0
-      -rpcallowip=0.0.0.0/0
-      -rpcuser=${BITCOIND_RPC_USER}
-      -rpcpassword=${BITCOIND_RPC_PASSWORD}
+      - ${API_PUBLISH_PORT:-8080}:8080
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    networks: [yabe]
+
+networks:
+  yabe:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+volumes:
+  pgdata: {}
+  bitcoin-data: {}
