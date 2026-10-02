@@ -58,7 +58,7 @@ Problems found:
 | Language | TypeScript, `strict`, ESM | Goal of the migration |
 | Monorepo | pnpm workspaces, `tsc` project references | Standard, lightweight, no extra build orchestrator needed |
 | HTTP | Fastify | Async-native, fast, schema-driven, first-class TypeScript type providers |
-| Schemas | TypeBox (API schemas *and* env config) | One definition → runtime validation + TS types + OpenAPI; one schema library across the repo |
+| Schemas | zod (API schemas *and* env config), via `fastify-type-provider-zod` | One definition → runtime validation + TS types + OpenAPI; one schema library across the repo (see §13) |
 | OpenAPI | `@fastify/swagger` (+ UI at `/docs`) | Generated from route schemas |
 | Data access | Prisma (schema, migrations, client); `$queryRaw` (TypedSQL) as escape hatch | Readable schema, strong generated types, `BigInt` → JS `bigint` |
 | Bitcoin script utils | `bitcoinjs-lib` | asm decoding on read |
@@ -87,7 +87,7 @@ yabe/
 ├─ packages/
 │  ├─ db/             # Prisma schema, migrations, client factory, tx_num helpers
 │  ├─ bitcoin-rpc/    # typed bitcoind JSON-RPC client (native fetch, timeouts, retries)
-│  └─ shared/         # config loading (TypeBox), logger (pino), sats/hex utils, domain types
+│  └─ shared/         # config loading (zod), logger (pino), sats/hex utils, domain types
 ├─ docker/            # Dockerfiles
 ├─ docker-compose.yml
 ├─ .env.example
@@ -283,7 +283,7 @@ Pagination is keyset-based (cursor). `limit` defaults to 25, maximum 100.
 
 ### OpenAPI contract
 
-- TypeBox schemas on every route request and response.
+- zod schemas on every route request and response.
 - `pnpm openapi:export` writes `apps/api/openapi.json`, which is committed; CI fails on drift.
 - This file is the contract for the frontend's generated client (`openapi-typescript`) and for the UI design agent.
 
@@ -337,7 +337,7 @@ The network is a config value, validated against the node at startup and reporte
   - Pruning is removed.
 - **Images:** multi-stage Dockerfiles, `pnpm deploy` for production dependencies, `node:24-slim`, non-root user.
 - **Dev workflow:** run only `postgres` + `bitcoind` in Compose and the apps on the host with `pnpm dev` (`tsx` watch).
-- **Config:** one root `.env.example`; each app validates its env with TypeBox at startup and exits with a clear message if it's invalid.
+- **Config:** one root `.env.example`; each app validates its env with zod at startup and exits with a clear message if it's invalid.
 
 ### CI (GitHub Actions, every PR)
 
@@ -386,4 +386,5 @@ Install (pnpm cache) → lint → typecheck → unit tests → integration tests
 - **Builds:** per-package `tsc` builds in pnpm's topological order. Dev, tests and typecheck resolve workspace packages to source through the `@yabe/source` export condition. Apps set `declaration: false`.
 - **Pinned versions:** Bitcoin Core image `bitcoin/bitcoin:31.1` (community-built; it verifies official release signatures), `postgres:18-alpine`, Prisma 7.10.
 - **`Bytes[]` is supported** by Prisma on Postgres, so `witness` is a `bytea[]` column and the child-table fallback is unused.
+- **Schemas use zod instead of TypeBox** (changed after implementation, at the owner's request). zod is the more widely known library; `fastify-type-provider-zod` provides request/response validation and converts the schemas to JSON Schema for OpenAPI. Trade-offs: numeric query and path params must be coerced explicitly (`z.coerce.number()`), and responses are validated by zod instead of Fastify's fast serializer.
 - **The OpenAPI drift check** is a unit test (`apps/api/src/openapi.test.ts`) that compares the generated spec with the committed `apps/api/openapi.json`.

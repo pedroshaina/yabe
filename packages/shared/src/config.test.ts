@@ -1,10 +1,10 @@
-import { Type } from 'typebox'
+import { z } from 'zod'
 import { describe, expect, it } from 'vitest'
 import { ConfigError, LogLevelSchema, loadConfig, NetworkSchema } from './config.js'
 
-const Schema = Type.Object({
-  DATABASE_URL: Type.String({ minLength: 1 }),
-  PORT: Type.Integer({ minimum: 1, default: 8080 }),
+const Schema = z.object({
+  DATABASE_URL: z.string().min(1),
+  PORT: z.coerce.number().int().min(1).default(8080),
   BITCOIN_NETWORK: NetworkSchema,
   LOG_LEVEL: LogLevelSchema,
 })

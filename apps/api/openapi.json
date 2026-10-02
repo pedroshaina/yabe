@@ -22,6 +22,31 @@
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "properties": {
+                    "network": {
+                      "type": "string"
+                    },
+                    "nodeTipHeight": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "indexedTipHeight": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "lag": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                    }
+                  },
                   "required": [
                     "network",
                     "nodeTipHeight",
@@ -29,25 +54,7 @@
                     "lag",
                     "updatedAt"
                   ],
-                  "properties": {
-                    "network": {
-                      "type": "string"
-                    },
-                    "nodeTipHeight": {
-                      "type": "integer"
-                    },
-                    "indexedTipHeight": {
-                      "type": "integer"
-                    },
-                    "lag": {
-                      "type": "integer",
-                      "minimum": 0
-                    },
-                    "updatedAt": {
-                      "type": "string",
-                      "format": "date-time"
-                    }
-                  }
+                  "additionalProperties": false
                 }
               }
             }
@@ -58,11 +65,6 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
                   "properties": {
                     "type": {
                       "type": "string"
@@ -71,12 +73,20 @@
                       "type": "string"
                     },
                     "status": {
-                      "type": "integer"
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     },
                     "detail": {
                       "type": "string"
                     }
-                  }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -104,14 +114,14 @@
           },
           {
             "schema": {
+              "default": 25,
               "type": "integer",
               "minimum": 1,
-              "maximum": 100,
-              "default": 25
+              "maximum": 100
             },
             "in": "query",
             "name": "limit",
-            "required": true
+            "required": false
           }
         ],
         "responses": {
@@ -121,15 +131,55 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "data",
-                    "nextCursor"
-                  ],
                   "properties": {
                     "data": {
                       "type": "array",
                       "items": {
                         "type": "object",
+                        "properties": {
+                          "height": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "hash": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{64}$",
+                            "description": "Lowercase hex, display byte order"
+                          },
+                          "time": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                          },
+                          "txCount": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "size": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "weight": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "totalFee": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991,
+                            "description": "Amount in satoshis"
+                          },
+                          "subsidy": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991,
+                            "description": "Amount in satoshis"
+                          }
+                        },
                         "required": [
                           "height",
                           "hash",
@@ -140,53 +190,27 @@
                           "totalFee",
                           "subsidy"
                         ],
-                        "properties": {
-                          "height": {
-                            "type": "integer",
-                            "minimum": 0
-                          },
-                          "hash": {
-                            "type": "string",
-                            "pattern": "^[0-9a-f]{64}$",
-                            "description": "Lowercase hex, display byte order"
-                          },
-                          "time": {
-                            "type": "string",
-                            "format": "date-time"
-                          },
-                          "txCount": {
-                            "type": "integer"
-                          },
-                          "size": {
-                            "type": "integer"
-                          },
-                          "weight": {
-                            "type": "integer"
-                          },
-                          "totalFee": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "description": "Amount in satoshis"
-                          },
-                          "subsidy": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "description": "Amount in satoshis"
-                          }
-                        }
+                        "additionalProperties": false
                       }
                     },
                     "nextCursor": {
                       "anyOf": [
                         {
-                          "type": "integer"
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
                         },
                         {
                           "type": "null"
                         }
                       ]
                     }
-                  }
+                  },
+                  "required": [
+                    "data",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -197,11 +221,6 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
                   "properties": {
                     "type": {
                       "type": "string"
@@ -210,12 +229,20 @@
                       "type": "string"
                     },
                     "status": {
-                      "type": "integer"
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     },
                     "detail": {
                       "type": "string"
                     }
-                  }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -248,32 +275,11 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "height",
-                    "hash",
-                    "time",
-                    "txCount",
-                    "size",
-                    "weight",
-                    "totalFee",
-                    "subsidy",
-                    "confirmations",
-                    "prevHash",
-                    "nextHash",
-                    "merkleRoot",
-                    "version",
-                    "bits",
-                    "nonce",
-                    "difficulty",
-                    "medianTime",
-                    "strippedSize",
-                    "chainwork",
-                    "totalOut"
-                  ],
                   "properties": {
                     "height": {
                       "type": "integer",
-                      "minimum": 0
+                      "minimum": 0,
+                      "maximum": 9007199254740991
                     },
                     "hash": {
                       "type": "string",
@@ -282,30 +288,40 @@
                     },
                     "time": {
                       "type": "string",
-                      "format": "date-time"
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                     },
                     "txCount": {
-                      "type": "integer"
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     },
                     "size": {
-                      "type": "integer"
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     },
                     "weight": {
-                      "type": "integer"
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     },
                     "totalFee": {
                       "type": "integer",
                       "minimum": 0,
+                      "maximum": 9007199254740991,
                       "description": "Amount in satoshis"
                     },
                     "subsidy": {
                       "type": "integer",
                       "minimum": 0,
+                      "maximum": 9007199254740991,
                       "description": "Amount in satoshis"
                     },
                     "confirmations": {
                       "type": "integer",
-                      "minimum": 0
+                      "minimum": 0,
+                      "maximum": 9007199254740991
                     },
                     "prevHash": {
                       "anyOf": [
@@ -337,24 +353,31 @@
                       "description": "Lowercase hex, display byte order"
                     },
                     "version": {
-                      "type": "integer"
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     },
                     "bits": {
                       "type": "string",
                       "description": "Compact target, 8 hex chars"
                     },
                     "nonce": {
-                      "type": "integer"
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     },
                     "difficulty": {
                       "type": "number"
                     },
                     "medianTime": {
                       "type": "string",
-                      "format": "date-time"
+                      "format": "date-time",
+                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
                     },
                     "strippedSize": {
-                      "type": "integer"
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     },
                     "chainwork": {
                       "type": "string",
@@ -363,9 +386,33 @@
                     "totalOut": {
                       "type": "integer",
                       "minimum": 0,
+                      "maximum": 9007199254740991,
                       "description": "Amount in satoshis"
                     }
-                  }
+                  },
+                  "required": [
+                    "height",
+                    "hash",
+                    "time",
+                    "txCount",
+                    "size",
+                    "weight",
+                    "totalFee",
+                    "subsidy",
+                    "confirmations",
+                    "prevHash",
+                    "nextHash",
+                    "merkleRoot",
+                    "version",
+                    "bits",
+                    "nonce",
+                    "difficulty",
+                    "medianTime",
+                    "strippedSize",
+                    "chainwork",
+                    "totalOut"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -376,11 +423,6 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
                   "properties": {
                     "type": {
                       "type": "string"
@@ -389,12 +431,20 @@
                       "type": "string"
                     },
                     "status": {
-                      "type": "integer"
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     },
                     "detail": {
                       "type": "string"
                     }
-                  }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -405,11 +455,6 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
                   "properties": {
                     "type": {
                       "type": "string"
@@ -418,12 +463,20 @@
                       "type": "string"
                     },
                     "status": {
-                      "type": "integer"
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     },
                     "detail": {
                       "type": "string"
                     }
-                  }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -451,14 +504,14 @@
           },
           {
             "schema": {
+              "default": 25,
               "type": "integer",
               "minimum": 1,
-              "maximum": 100,
-              "default": 25
+              "maximum": 100
             },
             "in": "query",
             "name": "limit",
-            "required": true
+            "required": false
           },
           {
             "schema": {
@@ -478,15 +531,60 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "data",
-                    "nextCursor"
-                  ],
                   "properties": {
                     "data": {
                       "type": "array",
                       "items": {
                         "type": "object",
+                        "properties": {
+                          "txid": {
+                            "type": "string",
+                            "pattern": "^[0-9a-f]{64}$",
+                            "description": "Lowercase hex, display byte order"
+                          },
+                          "position": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "isCoinbase": {
+                            "type": "boolean"
+                          },
+                          "inputCount": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "outputCount": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "totalOut": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991,
+                            "description": "Amount in satoshis"
+                          },
+                          "fee": {
+                            "anyOf": [
+                              {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 9007199254740991,
+                                "description": "Amount in satoshis"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "vsize": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
                         "required": [
                           "txid",
                           "position",
@@ -497,59 +595,27 @@
                           "fee",
                           "vsize"
                         ],
-                        "properties": {
-                          "txid": {
-                            "type": "string",
-                            "pattern": "^[0-9a-f]{64}$",
-                            "description": "Lowercase hex, display byte order"
-                          },
-                          "position": {
-                            "type": "integer",
-                            "minimum": 0
-                          },
-                          "isCoinbase": {
-                            "type": "boolean"
-                          },
-                          "inputCount": {
-                            "type": "integer"
-                          },
-                          "outputCount": {
-                            "type": "integer"
-                          },
-                          "totalOut": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "description": "Amount in satoshis"
-                          },
-                          "fee": {
-                            "anyOf": [
-                              {
-                                "type": "integer",
-                                "minimum": 0,
-                                "description": "Amount in satoshis"
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "vsize": {
-                            "type": "integer"
-                          }
-                        }
+                        "additionalProperties": false
                       }
                     },
                     "nextCursor": {
                       "anyOf": [
                         {
-                          "type": "integer"
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
                         },
                         {
                           "type": "null"
                         }
                       ]
                     }
-                  }
+                  },
+                  "required": [
+                    "data",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -560,11 +626,6 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
                   "properties": {
                     "type": {
                       "type": "string"
@@ -573,12 +634,20 @@
                       "type": "string"
                     },
                     "status": {
-                      "type": "integer"
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     },
                     "detail": {
                       "type": "string"
                     }
-                  }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -589,11 +658,6 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
                   "properties": {
                     "type": {
                       "type": "string"
@@ -602,12 +666,20 @@
                       "type": "string"
                     },
                     "status": {
-                      "type": "integer"
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     },
                     "detail": {
                       "type": "string"
                     }
-                  }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -639,6 +711,326 @@
               "application/json": {
                 "schema": {
                   "type": "object",
+                  "properties": {
+                    "txid": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$",
+                      "description": "Lowercase hex, display byte order"
+                    },
+                    "wtxid": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$",
+                      "description": "Lowercase hex, display byte order"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "locktime": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "size": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "vsize": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "weight": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    "isCoinbase": {
+                      "type": "boolean"
+                    },
+                    "fee": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991,
+                          "description": "Amount in satoshis"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "feeRate": {
+                      "description": "sat/vB, 2 decimals",
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "totalIn": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991,
+                          "description": "Amount in satoshis"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "totalOut": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991,
+                      "description": "Amount in satoshis"
+                    },
+                    "confirmations": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "block": {
+                      "type": "object",
+                      "properties": {
+                        "height": {
+                          "type": "integer",
+                          "minimum": -9007199254740991,
+                          "maximum": 9007199254740991
+                        },
+                        "hash": {
+                          "type": "string",
+                          "pattern": "^[0-9a-f]{64}$",
+                          "description": "Lowercase hex, display byte order"
+                        },
+                        "time": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z))$"
+                        }
+                      },
+                      "required": [
+                        "height",
+                        "hash",
+                        "time"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "inputs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "vin": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "coinbase": {
+                            "type": "boolean"
+                          },
+                          "prevout": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "txid": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-f]{64}$",
+                                    "description": "Lowercase hex, display byte order"
+                                  },
+                                  "vout": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "value": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 9007199254740991,
+                                    "description": "Amount in satoshis"
+                                  },
+                                  "address": {
+                                    "type": [
+                                      "string",
+                                      "null"
+                                    ]
+                                  },
+                                  "scriptType": {
+                                    "type": "string",
+                                    "enum": [
+                                      "nonstandard",
+                                      "pubkey",
+                                      "pubkeyhash",
+                                      "scripthash",
+                                      "multisig",
+                                      "nulldata",
+                                      "anchor",
+                                      "witness_v0_keyhash",
+                                      "witness_v0_scripthash",
+                                      "witness_v1_taproot",
+                                      "witness_unknown"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "txid",
+                                  "vout",
+                                  "value",
+                                  "address",
+                                  "scriptType"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "scriptSig": {
+                            "type": "object",
+                            "properties": {
+                              "hex": {
+                                "type": "string"
+                              },
+                              "asm": {
+                                "description": "Null for coinbase data or undecodable scripts",
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "hex",
+                              "asm"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "witness": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "sequence": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          }
+                        },
+                        "required": [
+                          "vin",
+                          "coinbase",
+                          "prevout",
+                          "scriptSig",
+                          "witness",
+                          "sequence"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "outputs": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "vout": {
+                            "type": "integer",
+                            "minimum": -9007199254740991,
+                            "maximum": 9007199254740991
+                          },
+                          "value": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991,
+                            "description": "Amount in satoshis"
+                          },
+                          "scriptPubKey": {
+                            "type": "object",
+                            "properties": {
+                              "hex": {
+                                "type": "string"
+                              },
+                              "asm": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "nonstandard",
+                                  "pubkey",
+                                  "pubkeyhash",
+                                  "scripthash",
+                                  "multisig",
+                                  "nulldata",
+                                  "anchor",
+                                  "witness_v0_keyhash",
+                                  "witness_v0_scripthash",
+                                  "witness_v1_taproot",
+                                  "witness_unknown"
+                                ]
+                              },
+                              "address": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "hex",
+                              "asm",
+                              "type",
+                              "address"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "spentBy": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "txid": {
+                                    "type": "string",
+                                    "pattern": "^[0-9a-f]{64}$",
+                                    "description": "Lowercase hex, display byte order"
+                                  },
+                                  "vin": {
+                                    "type": "integer",
+                                    "minimum": -9007199254740991,
+                                    "maximum": 9007199254740991
+                                  }
+                                },
+                                "required": [
+                                  "txid",
+                                  "vin"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "vout",
+                          "value",
+                          "scriptPubKey",
+                          "spentBy"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
                   "required": [
                     "txid",
                     "wtxid",
@@ -657,308 +1049,7 @@
                     "inputs",
                     "outputs"
                   ],
-                  "properties": {
-                    "txid": {
-                      "type": "string",
-                      "pattern": "^[0-9a-f]{64}$",
-                      "description": "Lowercase hex, display byte order"
-                    },
-                    "wtxid": {
-                      "type": "string",
-                      "pattern": "^[0-9a-f]{64}$",
-                      "description": "Lowercase hex, display byte order"
-                    },
-                    "version": {
-                      "type": "integer"
-                    },
-                    "locktime": {
-                      "type": "integer"
-                    },
-                    "size": {
-                      "type": "integer"
-                    },
-                    "vsize": {
-                      "type": "integer"
-                    },
-                    "weight": {
-                      "type": "integer"
-                    },
-                    "isCoinbase": {
-                      "type": "boolean"
-                    },
-                    "fee": {
-                      "anyOf": [
-                        {
-                          "type": "integer",
-                          "minimum": 0,
-                          "description": "Amount in satoshis"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "feeRate": {
-                      "anyOf": [
-                        {
-                          "type": "number",
-                          "description": "sat/vB, 2 decimals"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "totalIn": {
-                      "anyOf": [
-                        {
-                          "type": "integer",
-                          "minimum": 0,
-                          "description": "Amount in satoshis"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ]
-                    },
-                    "totalOut": {
-                      "type": "integer",
-                      "minimum": 0,
-                      "description": "Amount in satoshis"
-                    },
-                    "confirmations": {
-                      "type": "integer",
-                      "minimum": 0
-                    },
-                    "block": {
-                      "type": "object",
-                      "required": [
-                        "height",
-                        "hash",
-                        "time"
-                      ],
-                      "properties": {
-                        "height": {
-                          "type": "integer"
-                        },
-                        "hash": {
-                          "type": "string",
-                          "pattern": "^[0-9a-f]{64}$",
-                          "description": "Lowercase hex, display byte order"
-                        },
-                        "time": {
-                          "type": "string",
-                          "format": "date-time"
-                        }
-                      }
-                    },
-                    "inputs": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "required": [
-                          "vin",
-                          "coinbase",
-                          "prevout",
-                          "scriptSig",
-                          "witness",
-                          "sequence"
-                        ],
-                        "properties": {
-                          "vin": {
-                            "type": "integer"
-                          },
-                          "coinbase": {
-                            "type": "boolean"
-                          },
-                          "prevout": {
-                            "anyOf": [
-                              {
-                                "type": "object",
-                                "required": [
-                                  "txid",
-                                  "vout",
-                                  "value",
-                                  "address",
-                                  "scriptType"
-                                ],
-                                "properties": {
-                                  "txid": {
-                                    "type": "string",
-                                    "pattern": "^[0-9a-f]{64}$",
-                                    "description": "Lowercase hex, display byte order"
-                                  },
-                                  "vout": {
-                                    "type": "integer"
-                                  },
-                                  "value": {
-                                    "type": "integer",
-                                    "minimum": 0,
-                                    "description": "Amount in satoshis"
-                                  },
-                                  "address": {
-                                    "anyOf": [
-                                      {
-                                        "type": "string"
-                                      },
-                                      {
-                                        "type": "null"
-                                      }
-                                    ]
-                                  },
-                                  "scriptType": {
-                                    "enum": [
-                                      "nonstandard",
-                                      "pubkey",
-                                      "pubkeyhash",
-                                      "scripthash",
-                                      "multisig",
-                                      "nulldata",
-                                      "anchor",
-                                      "witness_v0_keyhash",
-                                      "witness_v0_scripthash",
-                                      "witness_v1_taproot",
-                                      "witness_unknown"
-                                    ]
-                                  }
-                                }
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          },
-                          "scriptSig": {
-                            "type": "object",
-                            "required": [
-                              "hex",
-                              "asm"
-                            ],
-                            "properties": {
-                              "hex": {
-                                "type": "string"
-                              },
-                              "asm": {
-                                "anyOf": [
-                                  {
-                                    "type": "string",
-                                    "description": "Null for coinbase data or undecodable scripts"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              }
-                            }
-                          },
-                          "witness": {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            }
-                          },
-                          "sequence": {
-                            "type": "integer"
-                          }
-                        }
-                      }
-                    },
-                    "outputs": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "required": [
-                          "vout",
-                          "value",
-                          "scriptPubKey",
-                          "spentBy"
-                        ],
-                        "properties": {
-                          "vout": {
-                            "type": "integer"
-                          },
-                          "value": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "description": "Amount in satoshis"
-                          },
-                          "scriptPubKey": {
-                            "type": "object",
-                            "required": [
-                              "hex",
-                              "asm",
-                              "type",
-                              "address"
-                            ],
-                            "properties": {
-                              "hex": {
-                                "type": "string"
-                              },
-                              "asm": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              },
-                              "type": {
-                                "enum": [
-                                  "nonstandard",
-                                  "pubkey",
-                                  "pubkeyhash",
-                                  "scripthash",
-                                  "multisig",
-                                  "nulldata",
-                                  "anchor",
-                                  "witness_v0_keyhash",
-                                  "witness_v0_scripthash",
-                                  "witness_v1_taproot",
-                                  "witness_unknown"
-                                ]
-                              },
-                              "address": {
-                                "anyOf": [
-                                  {
-                                    "type": "string"
-                                  },
-                                  {
-                                    "type": "null"
-                                  }
-                                ]
-                              }
-                            }
-                          },
-                          "spentBy": {
-                            "anyOf": [
-                              {
-                                "type": "object",
-                                "required": [
-                                  "txid",
-                                  "vin"
-                                ],
-                                "properties": {
-                                  "txid": {
-                                    "type": "string",
-                                    "pattern": "^[0-9a-f]{64}$",
-                                    "description": "Lowercase hex, display byte order"
-                                  },
-                                  "vin": {
-                                    "type": "integer"
-                                  }
-                                }
-                              },
-                              {
-                                "type": "null"
-                              }
-                            ]
-                          }
-                        }
-                      }
-                    }
-                  }
+                  "additionalProperties": false
                 }
               }
             }
@@ -969,11 +1060,6 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
                   "properties": {
                     "type": {
                       "type": "string"
@@ -982,12 +1068,20 @@
                       "type": "string"
                     },
                     "status": {
-                      "type": "integer"
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     },
                     "detail": {
                       "type": "string"
                     }
-                  }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }
@@ -998,11 +1092,6 @@
               "application/json": {
                 "schema": {
                   "type": "object",
-                  "required": [
-                    "type",
-                    "title",
-                    "status"
-                  ],
                   "properties": {
                     "type": {
                       "type": "string"
@@ -1011,12 +1100,20 @@
                       "type": "string"
                     },
                     "status": {
-                      "type": "integer"
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
                     },
                     "detail": {
                       "type": "string"
                     }
-                  }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ],
+                  "additionalProperties": false
                 }
               }
             }

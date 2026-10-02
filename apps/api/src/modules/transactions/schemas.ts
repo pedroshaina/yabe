@@ -1,54 +1,54 @@
-import { Type, type Static } from 'typebox'
-import { DateTime, HashHex, Nullable, Sats, ScriptTypeSchema } from '../../schemas/common.js'
+import { z } from 'zod'
+import { DateTime, HashHex, Sats, ScriptTypeSchema } from '../../schemas/common.js'
 
-const Prevout = Type.Object({
+const Prevout = z.object({
   txid: HashHex,
-  vout: Type.Integer(),
+  vout: z.int(),
   value: Sats,
-  address: Nullable(Type.String()),
+  address: z.string().nullable(),
   scriptType: ScriptTypeSchema,
 })
 
-const InputView = Type.Object({
-  vin: Type.Integer(),
-  coinbase: Type.Boolean(),
-  prevout: Nullable(Prevout),
-  scriptSig: Type.Object({
-    hex: Type.String(),
-    asm: Nullable(Type.String({ description: 'Null for coinbase data or undecodable scripts' })),
+const InputView = z.object({
+  vin: z.int(),
+  coinbase: z.boolean(),
+  prevout: Prevout.nullable(),
+  scriptSig: z.object({
+    hex: z.string(),
+    asm: z.string().nullable().describe('Null for coinbase data or undecodable scripts'),
   }),
-  witness: Type.Array(Type.String()),
-  sequence: Type.Integer(),
+  witness: z.array(z.string()),
+  sequence: z.int(),
 })
 
-const OutputView = Type.Object({
-  vout: Type.Integer(),
+const OutputView = z.object({
+  vout: z.int(),
   value: Sats,
-  scriptPubKey: Type.Object({
-    hex: Type.String(),
-    asm: Nullable(Type.String()),
+  scriptPubKey: z.object({
+    hex: z.string(),
+    asm: z.string().nullable(),
     type: ScriptTypeSchema,
-    address: Nullable(Type.String()),
+    address: z.string().nullable(),
   }),
-  spentBy: Nullable(Type.Object({ txid: HashHex, vin: Type.Integer() })),
+  spentBy: z.object({ txid: HashHex, vin: z.int() }).nullable(),
 })
 
-export const TxDetail = Type.Object({
+export const TxDetail = z.object({
   txid: HashHex,
   wtxid: HashHex,
-  version: Type.Integer(),
-  locktime: Type.Integer(),
-  size: Type.Integer(),
-  vsize: Type.Integer(),
-  weight: Type.Integer(),
-  isCoinbase: Type.Boolean(),
-  fee: Nullable(Sats),
-  feeRate: Nullable(Type.Number({ description: 'sat/vB, 2 decimals' })),
-  totalIn: Nullable(Sats),
+  version: z.int(),
+  locktime: z.int(),
+  size: z.int(),
+  vsize: z.int(),
+  weight: z.int(),
+  isCoinbase: z.boolean(),
+  fee: Sats.nullable(),
+  feeRate: z.number().nullable().describe('sat/vB, 2 decimals'),
+  totalIn: Sats.nullable(),
   totalOut: Sats,
-  confirmations: Type.Integer({ minimum: 0 }),
-  block: Type.Object({ height: Type.Integer(), hash: HashHex, time: DateTime }),
-  inputs: Type.Array(InputView),
-  outputs: Type.Array(OutputView),
+  confirmations: z.int().min(0),
+  block: z.object({ height: z.int(), hash: HashHex, time: DateTime }),
+  inputs: z.array(InputView),
+  outputs: z.array(OutputView),
 })
-export type TxDetail = Static<typeof TxDetail>
+export type TxDetail = z.infer<typeof TxDetail>

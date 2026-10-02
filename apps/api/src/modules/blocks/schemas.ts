@@ -1,45 +1,42 @@
-import { Type, type Static } from 'typebox'
-import { DateTime, HashHex, Nullable, Sats } from '../../schemas/common.js'
+import { z } from 'zod'
+import { DateTime, HashHex, Sats } from '../../schemas/common.js'
 
-const blockSummaryProps = {
-  height: Type.Integer({ minimum: 0 }),
+export const BlockSummary = z.object({
+  height: z.int().min(0),
   hash: HashHex,
   time: DateTime,
-  txCount: Type.Integer(),
-  size: Type.Integer(),
-  weight: Type.Integer(),
+  txCount: z.int(),
+  size: z.int(),
+  weight: z.int(),
   totalFee: Sats,
   subsidy: Sats,
-}
+})
+export type BlockSummary = z.infer<typeof BlockSummary>
 
-export const BlockSummary = Type.Object(blockSummaryProps)
-export type BlockSummary = Static<typeof BlockSummary>
-
-export const BlockDetail = Type.Object({
-  ...blockSummaryProps,
-  confirmations: Type.Integer({ minimum: 0 }),
-  prevHash: Nullable(HashHex),
-  nextHash: Nullable(HashHex),
+export const BlockDetail = BlockSummary.extend({
+  confirmations: z.int().min(0),
+  prevHash: HashHex.nullable(),
+  nextHash: HashHex.nullable(),
   merkleRoot: HashHex,
-  version: Type.Integer(),
-  bits: Type.String({ description: 'Compact target, 8 hex chars' }),
-  nonce: Type.Integer(),
-  difficulty: Type.Number(),
+  version: z.int(),
+  bits: z.string().describe('Compact target, 8 hex chars'),
+  nonce: z.int(),
+  difficulty: z.number(),
   medianTime: DateTime,
-  strippedSize: Type.Integer(),
-  chainwork: Type.String({ description: 'Hex' }),
+  strippedSize: z.int(),
+  chainwork: z.string().describe('Hex'),
   totalOut: Sats,
 })
-export type BlockDetail = Static<typeof BlockDetail>
+export type BlockDetail = z.infer<typeof BlockDetail>
 
-export const TxSummary = Type.Object({
+export const TxSummary = z.object({
   txid: HashHex,
-  position: Type.Integer({ minimum: 0 }),
-  isCoinbase: Type.Boolean(),
-  inputCount: Type.Integer(),
-  outputCount: Type.Integer(),
+  position: z.int().min(0),
+  isCoinbase: z.boolean(),
+  inputCount: z.int(),
+  outputCount: z.int(),
   totalOut: Sats,
-  fee: Nullable(Sats),
-  vsize: Type.Integer(),
+  fee: Sats.nullable(),
+  vsize: z.int(),
 })
-export type TxSummary = Static<typeof TxSummary>
+export type TxSummary = z.infer<typeof TxSummary>

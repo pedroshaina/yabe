@@ -1,12 +1,9 @@
-import type { FastifyPluginAsyncTypebox } from '@fastify/type-provider-typebox'
+import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod'
 import { Problem } from '../../schemas/common.js'
 import { Status } from './schemas.js'
 import type { StatusService } from './service.js'
 
-export const statusRoutes: FastifyPluginAsyncTypebox<{ service: StatusService }> = async (
-  app,
-  { service },
-) => {
+export const statusRoutes: FastifyPluginAsyncZod<{ service: StatusService }> = async (app, { service }) => {
   app.get(
     '/status',
     {

@@ -3,10 +3,15 @@ import helmet from '@fastify/helmet'
 import rateLimit from '@fastify/rate-limit'
 import swagger from '@fastify/swagger'
 import swaggerUi from '@fastify/swagger-ui'
-import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import type { PrismaClient } from '@yabe/db'
 import type { Logger } from '@yabe/shared'
 import Fastify, { type FastifyError } from 'fastify'
+import {
+  jsonSchemaTransform,
+  serializerCompiler,
+  validatorCompiler,
+  type ZodTypeProvider,
+} from 'fastify-type-provider-zod'
 import { HttpError, PROBLEM_CONTENT_TYPE, problem } from './errors.js'
 import { createBlocksRepository } from './modules/blocks/repository.js'
 import { blocksRoutes } from './modules/blocks/routes.js'
@@ -25,7 +30,10 @@ export interface AppOptions {
 }
 
 export const buildApp = async ({ prisma, logger, corsOrigins, rateLimitMax }: AppOptions) => {
-  const app = Fastify({ loggerInstance: logger }).withTypeProvider<TypeBoxTypeProvider>()
+  const app = Fastify({ loggerInstance: logger }).withTypeProvider<ZodTypeProvider>()
+  // zod validates requests and responses; the same schemas feed OpenAPI via jsonSchemaTransform below.
+  app.setValidatorCompiler(validatorCompiler)
+  app.setSerializerCompiler(serializerCompiler)
 
   app.setErrorHandler((err: FastifyError | HttpError, req, reply) => {
     const status = err.statusCode && err.statusCode >= 400 ? err.statusCode : 500
@@ -55,6 +63,7 @@ export const buildApp = async ({ prisma, logger, corsOrigins, rateLimitMax }: Ap
         description: 'Yet Another Block Explorer — Bitcoin blocks and transactions. Amounts are in satoshis.',
       },
     },
+    transform: jsonSchemaTransform,
   })
   await app.register(swaggerUi, { routePrefix: '/docs' })
 

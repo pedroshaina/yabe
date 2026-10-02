@@ -16,7 +16,7 @@
     "@yabe/bitcoin-rpc": "workspace:*",
     "@yabe/db": "workspace:*",
     "@yabe/shared": "workspace:*",
-    "typebox": "^1.3.34"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "testcontainers": "^12.2.0"

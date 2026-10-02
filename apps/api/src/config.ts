@@ -1,12 +1,12 @@
 import { loadConfig, LogLevelSchema } from '@yabe/shared'
-import { Type } from 'typebox'
+import { z } from 'zod'
 
-const ApiEnvSchema = Type.Object({
-  DATABASE_URL: Type.String({ minLength: 1 }),
-  API_HOST: Type.String({ default: '0.0.0.0' }),
-  API_PORT: Type.Integer({ minimum: 1, maximum: 65_535, default: 8080 }),
-  CORS_ORIGINS: Type.String({ default: '' }),
-  RATE_LIMIT_MAX: Type.Integer({ minimum: 1, default: 300 }),
+const ApiEnvSchema = z.object({
+  DATABASE_URL: z.string().min(1),
+  API_HOST: z.string().default('0.0.0.0'),
+  API_PORT: z.coerce.number().int().min(1).max(65_535).default(8080),
+  CORS_ORIGINS: z.string().default(''),
+  RATE_LIMIT_MAX: z.coerce.number().int().min(1).default(300),
   LOG_LEVEL: LogLevelSchema,
 })
 

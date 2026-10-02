@@ -1,11 +1,11 @@
-import { Type, type Static } from 'typebox'
+import { z } from 'zod'
 import { DateTime } from '../../schemas/common.js'
 
-export const Status = Type.Object({
-  network: Type.String(),
-  nodeTipHeight: Type.Integer(),
-  indexedTipHeight: Type.Integer(),
-  lag: Type.Integer({ minimum: 0 }),
+export const Status = z.object({
+  network: z.string(),
+  nodeTipHeight: z.int(),
+  indexedTipHeight: z.int(),
+  lag: z.int().min(0),
   updatedAt: DateTime,
 })
-export type Status = Static<typeof Status>
+export type Status = z.infer<typeof Status>

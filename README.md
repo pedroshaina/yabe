@@ -7,7 +7,7 @@ YABE is a Bitcoin block explorer backend with two parts: an **indexer**, which r
 | Path                   | What                                                                           |
 | ---------------------- | ------------------------------------------------------------------------------ |
 | `apps/indexer`         | Sync worker: `getblock` (verbosity 3) → Postgres, one DB transaction per block |
-| `apps/api`             | Fastify REST API (`/v1`), TypeBox schemas, generated OpenAPI                   |
+| `apps/api`             | Fastify REST API (`/v1`), zod schemas, generated OpenAPI                       |
 | `packages/db`          | Prisma schema and migrations, `tx_num` key helpers, test utilities             |
 | `packages/bitcoin-rpc` | Typed Bitcoin Core JSON-RPC client                                             |
 | `packages/shared`      | Config loading, logging, hex/satoshi utilities                                 |
@@ -31,7 +31,7 @@ The design is in `docs/superpowers/specs/2026-10-01-backend-typescript-restructu
 
 **Tested against a real node.** Besides unit tests on pure transform functions, the integration suite starts Postgres and a Bitcoin Core regtest node in containers. It mines blocks, sends a real wallet transaction, checks the indexed totals against the node's own `getblockstats`, and then forces a reorg with `invalidateblock` to verify rollback and re-indexing.
 
-**Contract first.** Every route declares TypeBox schemas, which give runtime validation, TypeScript types and the generated OpenAPI document. `apps/api/openapi.json` is committed, and a test fails if it drifts from the code, so the frontend can generate a typed client from it.
+**Contract first.** Every route declares zod schemas (through `fastify-type-provider-zod`), which give request and response validation, TypeScript types and the generated OpenAPI document. Environment config is validated with zod too. `apps/api/openapi.json` is committed, and a test fails if it drifts from the code, so the frontend can generate a typed client from it.
 
 ## Known limitations and next steps
 
