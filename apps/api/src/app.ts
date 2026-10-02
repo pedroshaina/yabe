@@ -12,6 +12,9 @@ import { createBlocksRepository } from './modules/blocks/repository.js'
 import { blocksRoutes } from './modules/blocks/routes.js'
 import { createBlocksService } from './modules/blocks/service.js'
 import { statusRoutes } from './modules/status/routes.js'
+import { createTransactionsRepository } from './modules/transactions/repository.js'
+import { transactionsRoutes } from './modules/transactions/routes.js'
+import { createTransactionsService } from './modules/transactions/service.js'
 import { createStatusService } from './modules/status/service.js'
 
 export interface AppOptions {
@@ -66,6 +69,9 @@ export const buildApp = async ({ prisma, logger, corsOrigins, rateLimitMax }: Ap
     async (v1) => {
       await v1.register(statusRoutes, { service: createStatusService(prisma) })
       await v1.register(blocksRoutes, { service: createBlocksService(createBlocksRepository(prisma)) })
+      await v1.register(transactionsRoutes, {
+        service: createTransactionsService(createTransactionsRepository(prisma)),
+      })
     },
     { prefix: '/v1' },
   )
