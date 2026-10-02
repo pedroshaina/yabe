@@ -4,4 +4,3 @@ pnpm-lock.yaml
 **/prisma/migrations
 apps/api/openapi.json
 docs
-yabe-backend

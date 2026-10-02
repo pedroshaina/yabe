@@ -374,3 +374,16 @@ Install (pnpm cache) → lint → typecheck → unit tests → integration tests
 - A maintained, pinned Bitcoin Core Docker image.
 - Current signet chain size, for the README's disk requirements.
 - The exact `scriptPubKey.type` values in the target Bitcoin Core version (for the `script_type` enum).
+
+## 13. Addendum: decisions made during implementation planning
+
+- **`transaction.txid` is indexed, not unique.** Mainnet has two BIP30 duplicate coinbase txids (heights 91842 and 91880). Lookups return the highest `tx_num`; prevout resolution prefers the newest occurrence.
+- **`script_type` uses Bitcoin Core's names verbatim** (`pubkeyhash`, `witness_v0_keyhash`, `witness_v1_taproot`, `anchor`, …). An unknown type stops the indexer, which makes a schema update necessary.
+- **The subsidy halving interval depends on the network:** 210,000, except regtest at 150.
+- **Transaction `version` is `bigint`,** because it is uint32 in Bitcoin Core.
+- **The API always returns `wtxid`,** equal to `txid` for non-witness transactions.
+- **`/v1/blocks/:hashOrHeight/transactions` also accepts a height.**
+- **Builds:** per-package `tsc` builds in pnpm's topological order. Dev, tests and typecheck resolve workspace packages to source through the `@yabe/source` export condition. Apps set `declaration: false`.
+- **Pinned versions:** Bitcoin Core image `bitcoin/bitcoin:31.1` (community-built; it verifies official release signatures), `postgres:18-alpine`, Prisma 7.10.
+- **`Bytes[]` is supported** by Prisma on Postgres, so `witness` is a `bytea[]` column and the child-table fallback is unused.
+- **The OpenAPI drift check** is a unit test (`apps/api/src/openapi.test.ts`) that compares the generated spec with the committed `apps/api/openapi.json`.

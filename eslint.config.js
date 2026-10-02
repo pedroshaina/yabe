@@ -5,7 +5,7 @@ import tseslint from 'typescript-eslint'
 
 export default defineConfig(
   {
-    ignores: ['**/dist/**', '**/node_modules/**', '**/src/generated/**', '**/coverage/**', 'yabe-backend/**'],
+    ignores: ['**/dist/**', '**/node_modules/**', '**/src/generated/**', '**/coverage/**'],
   },
   js.configs.recommended,
   tseslint.configs.recommended,
