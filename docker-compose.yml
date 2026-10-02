@@ -4,27 +4,24 @@ services:
     image: postgres:latest
     ports:
       - 5432:5432
-    env_file:
-      .env
+    env_file: .env
   yabe-indexer:
     container_name: yabe-indexer
     build:
-      dockerfile:  ./docker/Dockerfile
+      dockerfile: ./docker/Dockerfile
       context: ./yabe-backend/yabe-indexer
-    env_file:
-      .env
+    env_file: .env
     depends_on:
       - yabe-db
       - bitcoin-core
   yabe-api:
     container_name: yabe-api
     build:
-      dockerfile:  ./docker/Dockerfile
+      dockerfile: ./docker/Dockerfile
       context: ./yabe-backend/yabe-api
     ports:
       - 8080:8080
-    env_file:
-      .env
+    env_file: .env
     depends_on:
       - yabe-db
   bitcoin-core:
@@ -32,10 +29,8 @@ services:
     ports:
       - 8332:8332
     image: ruimarinho/bitcoin-core
-    env_file:
-      .env
-    command:
-      -server=1
+    env_file: .env
+    command: -server=1
       -prune=${BITCOIND_PRUNE_SIZE_MB}
       -rpcbind=0.0.0.0
       -rpcallowip=0.0.0.0/0

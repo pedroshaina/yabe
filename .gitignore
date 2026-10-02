@@ -117,3 +117,6 @@ dist
 # Local agent worktrees and scratch
 .claude/worktrees/
 .superpowers/
+
+# Prisma generated client
+packages/db/src/generated/

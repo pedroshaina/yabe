@@ -1,0 +1,7 @@
+pnpm-lock.yaml
+**/dist
+**/src/generated
+**/prisma/migrations
+apps/api/openapi.json
+docs
+yabe-backend
