@@ -24,6 +24,11 @@ export class RpcTimeoutError extends RpcError {
   override name = 'RpcTimeoutError'
 }
 
+// Wrong credentials: retrying cannot help, so callers should treat this as fatal.
+export class RpcAuthError extends RpcError {
+  override name = 'RpcAuthError'
+}
+
 interface RpcResponse<T> {
   result: T | null
   error: { code: number; message: string } | null
@@ -55,7 +60,7 @@ export class BitcoinRpcClient {
     }
 
     if (response.status === 401 || response.status === 403) {
-      throw new RpcError(`RPC authentication failed (HTTP ${response.status})`, method)
+      throw new RpcAuthError(`RPC authentication failed (HTTP ${response.status})`, method)
     }
 
     let payload: RpcResponse<T>

@@ -2,7 +2,8 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import type { BitcoinRpcClient } from '@yabe/bitcoin-rpc'
 import type { Logger, Network } from '@yabe/shared'
 import type { StoredTip, SyncStore } from '../store/block-store.js'
-import { transformBlock } from '../transform/block.js'
+import { InvalidBlockError, MissingFeeError, transformBlock } from '../transform/block.js'
+import { UnknownScriptTypeError } from '../transform/script-type.js'
 import { Backoff } from './backoff.js'
 
 export type ChainSource = Pick<BitcoinRpcClient, 'getBlockCount' | 'getBlockHash' | 'getBlock'>
@@ -10,6 +11,8 @@ export type ChainSource = Pick<BitcoinRpcClient, 'getBlockCount' | 'getBlockHash
 export class ReorgTooDeepError extends Error {
   override name = 'ReorgTooDeepError'
 }
+
+const FATAL_ERRORS = [ReorgTooDeepError, UnknownScriptTypeError, MissingFeeError, InvalidBlockError]
 
 export interface SyncerOptions {
   chain: ChainSource
@@ -77,7 +80,8 @@ export class Syncer {
     return indexed
   }
 
-  // Loops until aborted: indexes, idles at the tip, and backs off on errors. Only ReorgTooDeepError is fatal.
+  // Loops until aborted: indexes, idles at the tip, and backs off on transient errors. Deterministic errors
+  // (the same block would fail the same way on every retry) are fatal and need an operator.
   async run(signal: AbortSignal): Promise<void> {
     const backoff = new Backoff(this.opts.backoff ?? { initialMs: 1_000, maxMs: 60_000 })
     while (!signal.aborted) {
@@ -86,7 +90,7 @@ export class Syncer {
         backoff.reset()
         if (indexed === 0) await sleep(this.opts.pollIntervalMs, undefined, { signal })
       } catch (err) {
-        if (err instanceof ReorgTooDeepError) throw err
+        if (FATAL_ERRORS.some((type) => err instanceof type)) throw err
         if (signal.aborted) break
         const retryInMs = backoff.next()
         this.opts.logger.error({ err, retryInMs }, 'sync pass failed')
@@ -97,6 +101,19 @@ export class Syncer {
 
   // Returns the lowest height to delete, or null when our tip is still on the node's chain.
   private async findForkHeight(tip: StoredTip, nodeTip: number): Promise<number | null> {
+    // A node that is behind us (restarted, reindexing, still syncing) is not a reorg as long as its tip is on
+    // our chain: wait for it to catch up instead of deleting valid blocks. A real reorg to a shorter chain
+    // always differs at the node's tip height, so it falls through to the walk below.
+    if (
+      nodeTip < tip.height &&
+      (await this.opts.store.getHashAt(nodeTip)) === (await this.opts.chain.getBlockHash(nodeTip))
+    ) {
+      this.opts.logger.warn(
+        { indexedTip: tip.height, nodeTip },
+        'node is behind the indexed tip; waiting for it',
+      )
+      return null
+    }
     for (let height = tip.height; height >= 0; height--) {
       const ours = height === tip.height ? tip.hash : await this.opts.store.getHashAt(height)
       const theirs = height <= nodeTip ? await this.opts.chain.getBlockHash(height) : null

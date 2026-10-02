@@ -5,6 +5,8 @@ x-database-url: &database-url postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}
 services:
   postgres:
     image: postgres:18-alpine
+    restart: unless-stopped
+    stop_grace_period: 1m
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -22,6 +24,9 @@ services:
 
   bitcoind:
     image: bitcoin/bitcoin:31.1
+    restart: unless-stopped
+    # bitcoind flushes its UTXO cache on shutdown; a SIGKILL mid-flush forces a long replay on mainnet.
+    stop_grace_period: 5m
     command:
       - -chain=${BITCOIN_NETWORK}
       - -server=1

@@ -1,4 +1,4 @@
-import { RpcError, type RpcBlockchainInfo } from '@yabe/bitcoin-rpc'
+import { RpcAuthError, RpcError, type RpcBlockchainInfo } from '@yabe/bitcoin-rpc'
 import { createLogger } from '@yabe/shared'
 import { expect, it } from 'vitest'
 import { Backoff } from './backoff.js'
@@ -38,6 +38,20 @@ it('rejects a node on a different network', async () => {
   await expect(waitForNode(rpc, 'signet', logger, new AbortController().signal, fast())).rejects.toThrow(
     NodeMismatchError,
   )
+})
+
+it('fails fast on wrong RPC credentials instead of waiting forever', async () => {
+  let calls = 0
+  const rpc = {
+    getBlockchainInfo: async (): Promise<RpcBlockchainInfo> => {
+      calls++
+      throw new RpcAuthError('RPC authentication failed (HTTP 401)', 'getblockchaininfo')
+    },
+  }
+  await expect(waitForNode(rpc, 'signet', logger, new AbortController().signal, fast())).rejects.toThrow(
+    RpcAuthError,
+  )
+  expect(calls).toBe(1)
 })
 
 it('rejects a pruned node', async () => {

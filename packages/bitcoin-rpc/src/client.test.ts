@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { afterEach, describe, expect, it } from 'vitest'
-import { BitcoinRpcClient, RpcError, RpcTimeoutError } from './client.js'
+import { BitcoinRpcClient, RpcAuthError, RpcError, RpcTimeoutError } from './client.js'
 
 type Handler = (
   req: IncomingMessage,
@@ -81,7 +81,12 @@ describe('BitcoinRpcClient', () => {
       res.writeHead(401)
       res.end()
     })
-    await expect(client(url).getBlockCount()).rejects.toThrow(/authentication failed/)
+    const error = await client(url)
+      .getBlockCount()
+      .catch((e: unknown) => e)
+    expect(error).toBeInstanceOf(RpcAuthError)
+    expect(error).toBeInstanceOf(RpcError)
+    expect((error as Error).message).toMatch(/authentication failed/)
   })
 
   it('raises RpcTimeoutError when the node does not answer in time', async () => {

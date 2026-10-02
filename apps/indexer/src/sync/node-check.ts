@@ -1,5 +1,5 @@
 import { setTimeout as sleep } from 'node:timers/promises'
-import { RpcError, type BitcoinRpcClient, type RpcBlockchainInfo } from '@yabe/bitcoin-rpc'
+import { RpcAuthError, RpcError, type BitcoinRpcClient, type RpcBlockchainInfo } from '@yabe/bitcoin-rpc'
 import type { Logger, Network } from '@yabe/shared'
 import { Backoff } from './backoff.js'
 
@@ -21,7 +21,7 @@ export const waitForNode = async (
     try {
       info = await rpc.getBlockchainInfo()
     } catch (err) {
-      if (!(err instanceof RpcError)) throw err
+      if (!(err instanceof RpcError) || err instanceof RpcAuthError) throw err
       const retryInMs = backoff.next()
       logger.warn({ reason: err.message, retryInMs }, 'bitcoin node not ready')
       await sleep(retryInMs, undefined, { signal })

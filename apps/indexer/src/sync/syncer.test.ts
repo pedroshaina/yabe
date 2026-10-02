@@ -2,6 +2,7 @@ import { createLogger } from '@yabe/shared'
 import { describe, expect, it } from 'vitest'
 import { makeChain } from '../../test/fixtures.js'
 import { FakeChain, InMemoryStore } from '../../test/fakes.js'
+import { UnknownScriptTypeError } from '../transform/script-type.js'
 import { ReorgTooDeepError, Syncer, type SyncerOptions } from './syncer.js'
 
 const setup = (length: number, overrides: Partial<SyncerOptions> = {}) => {
@@ -75,6 +76,16 @@ describe('Syncer.syncOnce', () => {
     expect(store.hashes).toEqual(before)
   })
 
+  it('waits without deleting anything when the node is behind on the same chain', async () => {
+    const { chain, store, syncer } = setup(6, { reorgMaxDepth: 2 })
+    await syncer.syncOnce()
+    const before = [...store.hashes]
+    chain.blocks = chain.blocks.slice(0, 3) // node restarted / resyncing: tip 2 on our chain
+
+    expect(await syncer.syncOnce()).toBe(0)
+    expect(store.hashes).toEqual(before)
+  })
+
   it('stops between blocks when aborted', async () => {
     const { store, syncer } = setup(6)
     const controller = new AbortController()
@@ -103,6 +114,12 @@ describe('Syncer.run', () => {
     await syncer.syncOnce()
     chain.reorg(3, makeChain(4, 'fork', 3, chain.blocks[2]!.hash))
     await expect(syncer.run(new AbortController().signal)).rejects.toThrow(ReorgTooDeepError)
+  })
+
+  it('stops on a block it cannot map instead of retrying it forever', async () => {
+    const { chain, syncer } = setup(3)
+    chain.blocks[2]!.tx[0]!.vout[0]!.scriptPubKey.type = 'witness_v2_future'
+    await expect(syncer.run(new AbortController().signal)).rejects.toThrow(UnknownScriptTypeError)
   })
 
   it('returns promptly when aborted while idle', async () => {
