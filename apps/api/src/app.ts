@@ -8,6 +8,9 @@ import type { PrismaClient } from '@yabe/db'
 import type { Logger } from '@yabe/shared'
 import Fastify, { type FastifyError } from 'fastify'
 import { HttpError, PROBLEM_CONTENT_TYPE, problem } from './errors.js'
+import { createBlocksRepository } from './modules/blocks/repository.js'
+import { blocksRoutes } from './modules/blocks/routes.js'
+import { createBlocksService } from './modules/blocks/service.js'
 import { statusRoutes } from './modules/status/routes.js'
 import { createStatusService } from './modules/status/service.js'
 
@@ -62,6 +65,7 @@ export const buildApp = async ({ prisma, logger, corsOrigins, rateLimitMax }: Ap
   await app.register(
     async (v1) => {
       await v1.register(statusRoutes, { service: createStatusService(prisma) })
+      await v1.register(blocksRoutes, { service: createBlocksService(createBlocksRepository(prisma)) })
     },
     { prefix: '/v1' },
   )
