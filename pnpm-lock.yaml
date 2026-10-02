@@ -39,6 +39,8 @@ importers:
         specifier: ^5.0.3
         version: 5.0.3(@types/node@24.19.1)(vite@8.3.2(@types/node@24.19.1)(esbuild@0.28.2)(tsx@4.23.15))
 
+  packages/bitcoin-rpc: {}
+
   packages/shared:
     dependencies:
       pino:
