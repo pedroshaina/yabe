@@ -38,18 +38,18 @@ yabe is a portfolio and learning project, so the rewrite favours a clear design 
 
 ## Key decisions
 
-| Decision | Chosen | Alternatives considered | Why |
-|---|---|---|---|
-| System shape | Indexer and API as separate services, one repo | One combined service; a thin index that fetches details from the node | Separate failure and restart, a read-only API, and Postgres keeps the data address pages will need |
-| Runtime and repo | Node.js 24 LTS, pnpm workspaces | Bun; npm workspaces; Turborepo or Nx | Mainstream and stable; pnpm's strict dependencies catch mistakes; three packages don't need an orchestrator |
-| Database access | Prisma, with typed raw SQL for the indexer's heaviest queries | Drizzle, Kysely, raw SQL | A well-known ORM for most queries, with real SQL where the work is SQL-shaped |
-| HTTP framework | Fastify | Express, Hono, NestJS | Route schemas both validate requests and generate the OpenAPI contract, so the docs can't drift from the code |
-| Schemas | zod | TypeBox, hand-written JSON Schema | Widely known, readable, and shareable with the frontend |
-| Node client | A small typed JSON-RPC client written for this project | Existing npm clients; parsing raw blocks | Typed and dependency-free; validates the node's responses at runtime |
-| Testing | Vitest, with Testcontainers for real Postgres and regtest | Jest; mocks; a manually started test stack | The important claims (sync, reorgs, SQL) are tested against real systems, with one command |
-| Pagination | Cursors | Page numbers | Results don't shift as new blocks arrive |
-| Errors | RFC 9457 problem+json | Ad hoc error bodies | A standard, predictable error format |
-| Tooling | ESLint + Prettier, pino, GitHub Actions | Biome, winston | Industry-standard choices |
+| Decision         | Chosen                                                        | Alternatives considered                                               | Why                                                                                                           |
+| ---------------- | ------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| System shape     | Indexer and API as separate services, one repo                | One combined service; a thin index that fetches details from the node | Separate failure and restart, a read-only API, and Postgres keeps the data address pages will need            |
+| Runtime and repo | Node.js 24 LTS, pnpm workspaces                               | Bun; npm workspaces; Turborepo or Nx                                  | Mainstream and stable; pnpm's strict dependencies catch mistakes; three packages don't need an orchestrator   |
+| Database access  | Prisma, with typed raw SQL for the indexer's heaviest queries | Drizzle, Kysely, raw SQL                                              | A well-known ORM for most queries, with real SQL where the work is SQL-shaped                                 |
+| HTTP framework   | Fastify                                                       | Express, Hono, NestJS                                                 | Route schemas both validate requests and generate the OpenAPI contract, so the docs can't drift from the code |
+| Schemas          | zod                                                           | TypeBox, hand-written JSON Schema                                     | Widely known, readable, and shareable with the frontend                                                       |
+| Node client      | A small typed JSON-RPC client written for this project        | Existing npm clients; parsing raw blocks                              | Typed and dependency-free; validates the node's responses at runtime                                          |
+| Testing          | Vitest, with Testcontainers for real Postgres and regtest     | Jest; mocks; a manually started test stack                            | The important claims (sync, reorgs, SQL) are tested against real systems, with one command                    |
+| Pagination       | Cursors                                                       | Page numbers                                                          | Results don't shift as new blocks arrive                                                                      |
+| Errors           | RFC 9457 problem+json                                         | Ad hoc error bodies                                                   | A standard, predictable error format                                                                          |
+| Tooling          | ESLint + Prettier, pino, GitHub Actions                       | Biome, winston                                                        | Industry-standard choices                                                                                     |
 
 ## Known limitations
 
