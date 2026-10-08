@@ -6,3 +6,9 @@ onlyBuiltDependencies:
   - "@prisma/engines"
   - esbuild
   - prisma
+
+# Optional native/SSH extras of Testcontainers' Docker client; not needed.
+ignoredBuiltDependencies:
+  - cpu-features
+  - protobufjs
+  - ssh2
