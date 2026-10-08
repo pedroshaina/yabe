@@ -134,6 +134,22 @@ describe("schema", () => {
     expect(output.spentByInputIndex).toBeNull();
   });
 
+  it("rejects a spent mark with only one of its two columns set", async () => {
+    const { coinbase } = await seedChain(prisma);
+    const where = { transactionId_index: { transactionId: coinbase.id, index: 0 } };
+
+    // A half mark would bypass the foreign key and never be cleared by a rollback.
+    await expect(
+      prisma.transactionOutput.update({ where, data: { spentByInputIndex: null } }),
+    ).rejects.toThrow(/check constraint/i);
+    await expect(
+      prisma.transactionOutput.update({
+        where,
+        data: { spentByTransactionId: null, spentByInputIndex: 0 },
+      }),
+    ).rejects.toThrow(/check constraint/i);
+  });
+
   it("rejects a duplicate txid", async () => {
     await prisma.block.create({ data: blockData(1) });
     await prisma.transaction.create({ data: transactionData(1, 0, hash(1)) });

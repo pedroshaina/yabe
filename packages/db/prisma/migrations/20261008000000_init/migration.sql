@@ -92,3 +92,8 @@ ALTER TABLE "transaction_output" ADD CONSTRAINT "transaction_output_spent_by_tra
 -- AddForeignKey
 ALTER TABLE "transaction_input" ADD CONSTRAINT "transaction_input_transaction_id_fkey" FOREIGN KEY ("transaction_id") REFERENCES "transaction"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+
+-- AddCheckConstraint (hand-written; Prisma's schema language cannot express CHECK constraints)
+-- A spent mark is both columns or neither: with only one set, the composite foreign key
+-- (MATCH SIMPLE) is not checked and ON DELETE SET NULL would never clear it.
+ALTER TABLE "transaction_output" ADD CONSTRAINT "transaction_output_spent_by_complete_check" CHECK (("spent_by_transaction_id" IS NULL) = ("spent_by_input_index" IS NULL));
