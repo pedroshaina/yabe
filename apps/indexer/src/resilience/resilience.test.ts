@@ -4,7 +4,7 @@ import { InvalidBlockDataError } from "../sync/transform.ts";
 import { RetriesExhaustedError, withRetry } from "./retry.ts";
 import { isTransient } from "./transient.ts";
 
-/** Shapes captured from Prisma 7.10 with @prisma/adapter-pg while planning. */
+/** Hand-built error shapes for classification rules; db-errors.test.ts pins real ones against Postgres. */
 const prismaError = (code: string, meta?: unknown) =>
   Object.assign(new Error(`prisma ${code}`), { name: "PrismaClientKnownRequestError", code, meta });
 const adapterError = (sqlState: string) =>
@@ -156,6 +156,33 @@ describe("withRetry", () => {
     expect(error).toMatchObject({ attempts: 4, cause: last });
     expect(String(error)).toMatch(/4 attempts/);
     expect(calls).toBe(4);
+  });
+
+  it("resets the retry budget whenever the operation made progress", async () => {
+    let calls = 0;
+    let progressed = false;
+
+    const result = await withRetry(
+      async () => {
+        calls += 1;
+        progressed = true; // e.g. a block was written before the failure
+        if (calls < 10) throw unreachable();
+        return "done";
+      },
+      {
+        isTransient,
+        maxRetries: 2,
+        backoff: { initialDelayMs: 1, maxDelayMs: 1 },
+        madeProgress: () => {
+          const made = progressed;
+          progressed = false;
+          return made;
+        },
+      },
+    );
+
+    expect(result).toBe("done");
+    expect(calls).toBe(10);
   });
 
   it("is not itself transient, so a caller's retry loop stops", () => {

@@ -25,6 +25,8 @@ export interface SyncDeps {
   network: Network;
   logger: Logger;
   maxReorgDepth: number;
+  /** Called after each block written or reorg rolled back; lets retries tell progress from a stuck loop. */
+  onProgress?: () => void;
 }
 
 export interface SyncResult {
@@ -83,13 +85,26 @@ export async function syncOnce(deps: SyncDeps, signal?: AbortSignal): Promise<Sy
   let tipHash: string | null = null;
   let rolledBack = 0;
   if (tip) {
-    const common = await findCommonBlock(deps, tip.height, nodeHeight);
+    let common: { height: number; hash: string };
+    try {
+      common = await findCommonBlock(deps, tip.height, nodeHeight);
+    } catch (error) {
+      if (error instanceof RpcError && error.code === RPC_INVALID_PARAMETER) {
+        logger.info(
+          { tip: tip.height },
+          "the node's chain changed during the fork check; re-checking",
+        );
+        return { indexed: 0, rolledBack: 0, caughtUp: false };
+      }
+      throw error;
+    }
     if (common.height < tip.height && common.height === nodeHeight) {
       logger.warn({ tip: tip.height, nodeHeight }, "the node is behind our tip; waiting for it");
       return { indexed: 0, rolledBack: 0, caughtUp: true };
     }
     if (common.height < tip.height) {
       rolledBack = await rollbackTo(prisma, common.height);
+      deps.onProgress?.();
       logger.warn(
         { from: tip.height, to: common.height, rolledBack },
         "chain reorganisation: rolled back",
@@ -121,6 +136,7 @@ export async function syncOnce(deps: SyncDeps, signal?: AbortSignal): Promise<Sy
     }
 
     await writeBlock(prisma, blockToRows(block, network));
+    deps.onProgress?.();
     tipHash = block.hash;
     height += 1;
     indexed += 1;
@@ -141,23 +157,39 @@ export async function runSync(
   signal: AbortSignal,
 ): Promise<void> {
   const { logger } = deps;
+  let progressed = false;
+  const tracked: SyncDeps = { ...deps, onProgress: () => (progressed = true) };
   while (!signal.aborted) {
-    let result: SyncResult;
+    let outcome: { result: SyncResult; height: number | undefined };
     try {
-      result = await withRetry(() => syncOnce(deps, signal), {
-        isTransient,
-        signal,
-        backoff: deps.backoff ?? DEFAULT_BACKOFF,
-        onRetry: (error, attempt, delayMs) =>
-          logger.warn({ err: error, attempt, delayMs }, "transient error, retrying"),
-      });
+      outcome = await withRetry(
+        async () => {
+          const result = await syncOnce(tracked, signal);
+          // Inside the retry: a database blip right after a pass is just another transient error.
+          const [tip] = await deps.prisma.$queryRawTyped(sql.selectTip());
+          return { result, height: tip?.height };
+        },
+        {
+          isTransient,
+          signal,
+          backoff: deps.backoff ?? DEFAULT_BACKOFF,
+          madeProgress: () => {
+            const made = progressed;
+            progressed = false;
+            return made;
+          },
+          onRetry: (error, attempt, delayMs) =>
+            logger.warn({ err: error, attempt, delayMs }, "transient error, retrying"),
+        },
+      );
     } catch (error) {
       if (signal.aborted) return;
       throw error;
     }
+    progressed = false;
+    const { result, height } = outcome;
     if (result.indexed > 0 || result.rolledBack > 0) {
-      const [tip] = await deps.prisma.$queryRawTyped(sql.selectTip());
-      logger.info({ ...result, height: tip?.height }, "synced with the node");
+      logger.info({ ...result, height }, "synced with the node");
     }
     if (result.caughtUp) {
       await sleep(deps.pollIntervalMs, undefined, { signal }).catch(() => undefined);

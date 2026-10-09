@@ -212,6 +212,25 @@ describe("sync against regtest", () => {
     await expect(t.node.getBlockHash(nodeHeight + 1)).rejects.toBeInstanceOf(RpcError);
   });
 
+  it("ends the pass when the node's chain shrinks during the fork check", async () => {
+    await syncOnce(deps);
+    const tip = (await tipOf())!;
+
+    await t.invalidate(tip.hash);
+    try {
+      // A block count read just before the shrink: the walk asks for a height the node no longer has.
+      const node: BitcoinNode = { ...t.node, getBlockCount: async () => tip.height };
+      expect(await syncOnce({ ...deps, node })).toEqual({
+        indexed: 0,
+        rolledBack: 0,
+        caughtUp: false,
+      });
+      expect(await tipOf()).toEqual(tip);
+    } finally {
+      await t.reconsider(tip.hash);
+    }
+  });
+
   it("stops between blocks when aborted mid-pass, and the next pass resumes", async () => {
     const controller = new AbortController();
     let fetched = 0;
@@ -311,6 +330,32 @@ describe("sync against regtest", () => {
       ),
     ).rejects.toBeInstanceOf(RetriesExhaustedError);
     expect(attempts).toBe(11);
+  });
+
+  it("runSync keeps going through many transient errors while blocks are being written", async () => {
+    // Fails every third block fetch: far more than 10 failures over a full sync, but
+    // each pass writes blocks first, so the retry budget keeps resetting.
+    let fetches = 0;
+    const node: BitcoinNode = {
+      ...t.node,
+      getBlock: async (hash) => {
+        fetches += 1;
+        if (fetches % 3 === 0) throw refused();
+        return t.node.getBlock(hash);
+      },
+    };
+    const controller = new AbortController();
+    const running = runSync(
+      { ...deps, node, pollIntervalMs: 50, backoff: { initialDelayMs: 1, maxDelayMs: 1 } },
+      controller.signal,
+    );
+    const nodeHeight = await t.node.getBlockCount();
+
+    await expect.poll(async () => (await tipOf())?.height, { timeout: 20_000 }).toBe(nodeHeight);
+    controller.abort();
+
+    await expect(running).resolves.toBeUndefined();
+    expect(Math.floor(fetches / 3)).toBeGreaterThan(10);
   });
 
   it("runSync stops promptly when aborted during a backoff wait", async () => {

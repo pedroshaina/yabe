@@ -26,6 +26,11 @@ export interface RetryOptions {
   backoff?: BackoffOptions;
   /** Retries after the first attempt before giving up; defaults to DEFAULT_MAX_RETRIES. */
   maxRetries?: number;
+  /**
+   * Called after each failure: true when the operation made progress since the
+   * previous failure (e.g. wrote a block), which restarts the retry budget and backoff.
+   */
+  madeProgress?: () => boolean;
   /** Injectable for tests; defaults to Math.random. */
   random?: () => number;
   onRetry?: (error: unknown, attempt: number, delayMs: number) => void;
@@ -43,11 +48,15 @@ export async function withRetry<T>(operation: () => Promise<T>, options: RetryOp
   const maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
 
   for (let attempt = 1; ; attempt += 1) {
+    // `attempt` counts failures since the last progress; the budget applies to that streak.
     try {
       return await operation();
     } catch (error) {
       if (!options.isTransient(error) || options.signal?.aborted) {
         throw error;
+      }
+      if (options.madeProgress?.()) {
+        attempt = 1;
       }
       if (attempt > maxRetries) {
         throw new RetriesExhaustedError(attempt, { cause: error });
