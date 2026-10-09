@@ -152,6 +152,15 @@ describe("blockToRows", () => {
     expect(rows.block.totalFeeSat).toBe(1_410n);
   });
 
+  it("stores a transaction version of 2^31 or more as the signed 32-bit value", () => {
+    // Core 31 reports nVersion unsigned; consensus allows any 32-bit value. The column is int4.
+    const tx = { ...spend(h(2), h(9), 0.0001), version: 0xffffffff };
+
+    const rows = blockToRows(block(5, [coinbase(h(1), 50), tx]), "regtest");
+
+    expect(rows.transactions[1]?.transaction.version).toBe(-1);
+  });
+
   it("stores an output without an address as null", () => {
     const rows = blockToRows(block(1, [coinbase(h(1), 50)]), "regtest");
 

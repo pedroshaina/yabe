@@ -30,9 +30,12 @@ const outputSchema = z.object({
   scriptPubKey: scriptPubKeySchema,
 });
 
+/** nVersion: Core 31 reports it unsigned (0..2^32-1); older nodes signed. */
+const txVersion = z.number().int().min(-0x80000000).max(0xffffffff);
+
 const transactionSchema = z.object({
   txid: hash,
-  version: z.number().int(),
+  version: txVersion,
   size: uint,
   vsize: uint,
   weight: uint,

@@ -125,7 +125,8 @@ function transactionToRows(tx: RpcTransaction, position: number, where: string):
     transaction: {
       txid: tx.txid,
       position,
-      version: tx.version,
+      // Stored as signed int32 (int4 column), like Core displayed it before v28.
+      version: tx.version | 0,
       locktime: BigInt(tx.locktime),
       size: tx.size,
       vsize: tx.vsize,

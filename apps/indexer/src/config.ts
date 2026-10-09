@@ -7,7 +7,10 @@ export type LogLevel = (typeof LOG_LEVELS)[number];
 const envSchema = z.object({
   DATABASE_URL: z.url(),
   BITCOIN_NETWORK: z.enum(NETWORKS),
-  BITCOIN_RPC_URL: z.url(),
+  BITCOIN_RPC_URL: z.url().refine((value) => {
+    const url = new URL(value);
+    return url.username === "" && url.password === "";
+  }, "must not contain credentials; use BITCOIN_RPC_USER and BITCOIN_RPC_PASSWORD"),
   BITCOIN_RPC_USER: z.string().min(1),
   BITCOIN_RPC_PASSWORD: z.string().min(1),
   BITCOIN_RPC_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),

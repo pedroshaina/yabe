@@ -9,6 +9,8 @@ WITH marked AS (
   WHERE spender.block_height = $1
     AND o.transaction_id = funding.id
     AND o.index = i.prev_index
+    -- Never overwrite a spend: a re-spend lowers the count and the writer rejects the block.
+    AND o.spent_by_transaction_id IS NULL
   RETURNING 1
 )
 SELECT count(*)::int AS "markedCount" FROM marked

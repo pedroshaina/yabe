@@ -8,7 +8,7 @@ import * as $runtime from "@prisma/client/runtime/client"
 /**
  * @param height
  */
-export const markSpent = $runtime.makeTypedQueryFactory("WITH marked AS (\nUPDATE transaction_output AS o\nSET spent_by_transaction_id = i.transaction_id,\nspent_by_input_index = i.index\nFROM transaction_input AS i\nJOIN transaction AS spender ON spender.id = i.transaction_id\nJOIN transaction AS funding ON funding.txid = i.prev_txid\nWHERE spender.block_height = $1\nAND o.transaction_id = funding.id\nAND o.index = i.prev_index\nRETURNING 1\n)\nSELECT count(*)::int AS \"markedCount\" FROM marked") as (height: number) => $runtime.TypedSql<markSpent.Parameters, markSpent.Result>
+export const markSpent = $runtime.makeTypedQueryFactory("WITH marked AS (\nUPDATE transaction_output AS o\nSET spent_by_transaction_id = i.transaction_id,\nspent_by_input_index = i.index\nFROM transaction_input AS i\nJOIN transaction AS spender ON spender.id = i.transaction_id\nJOIN transaction AS funding ON funding.txid = i.prev_txid\nWHERE spender.block_height = $1\nAND o.transaction_id = funding.id\nAND o.index = i.prev_index\nAND o.spent_by_transaction_id IS NULL\nRETURNING 1\n)\nSELECT count(*)::int AS \"markedCount\" FROM marked") as (height: number) => $runtime.TypedSql<markSpent.Parameters, markSpent.Result>
 
 export namespace markSpent {
   export type Parameters = [height: number]

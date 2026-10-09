@@ -6,7 +6,7 @@ import type { BitcoinNode } from "../rpc/node.ts";
 import { blockToRows } from "./transform.ts";
 import { writeBlock } from "./writer.ts";
 
-/** The node's next block doesn't extend our tip. Phase 2 stops here; phase 3 rolls back. */
+/** The node's next block doesn't extend our tip. Reorg handling is not implemented yet, so this is fatal. */
 export class ChainMismatchError extends Error {
   override name = "ChainMismatchError";
 }

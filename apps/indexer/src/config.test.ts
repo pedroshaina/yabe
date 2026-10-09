@@ -39,6 +39,14 @@ describe("loadConfig", () => {
     expect(() => loadConfig(env)).toThrow(/BITCOIN_NETWORK/);
   });
 
+  it("rejects credentials embedded in BITCOIN_RPC_URL, without echoing them", () => {
+    // The URL is logged at startup; credentials belong in BITCOIN_RPC_USER/PASSWORD.
+    const env = { ...valid, BITCOIN_RPC_URL: "http://yabe:url-secret@127.0.0.1:38332" };
+
+    expect(() => loadConfig(env)).toThrow(/BITCOIN_RPC_URL/);
+    expect(() => loadConfig(env)).not.toThrow(/url-secret/);
+  });
+
   it("never echoes secret values in errors", () => {
     const env = { ...valid, POLL_INTERVAL_MS: "soon", DATABASE_URL: "not a url db-secret" };
 

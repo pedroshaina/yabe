@@ -143,6 +143,28 @@ describe("writeBlock", () => {
     expect(await prisma.transaction.count()).toBe(1);
   });
 
+  it("rejects a block that spends an output that is already spent", async () => {
+    await writeBlock(
+      prisma,
+      rows(1, [
+        tx(hash(0xb), 0, [coinbaseIn], [out(0, 5_000n)]),
+        tx(hash(0xc), 1, [spendIn(hash(0xa), 0)], [out(0, 900n)]),
+      ]),
+    );
+    const doubleSpend = rows(2, [
+      tx(hash(0xd), 0, [coinbaseIn], [out(0, 5_000n)]),
+      tx(hash(0xe), 1, [spendIn(hash(0xa), 0)], [out(0, 800n)]),
+    ]);
+
+    await expect(writeBlock(prisma, doubleSpend)).rejects.toBeInstanceOf(IntegrityError);
+    expect(await prisma.block.count()).toBe(2);
+    const a0 = await prisma.transactionOutput.findFirstOrThrow({
+      where: { transaction: { txid: hash(0xa) }, index: 0 },
+      include: { spentBy: { include: { transaction: true } } },
+    });
+    expect(a0.spentBy?.transaction.txid).toBe(hash(0xc));
+  });
+
   it("rejects a height that is already stored and leaves it unchanged", async () => {
     const duplicate = rows(0, [tx(hash(0xf), 0, [coinbaseIn], [out(0, 1n)])]);
 
