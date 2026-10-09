@@ -2,11 +2,13 @@ import { createPrismaClient, sql, type PrismaClient } from "@yabe/db";
 import { startTestDatabase, type TestDatabase } from "@yabe/db/testing";
 import { pino } from "pino";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { RpcError } from "../rpc/errors.ts";
+import { RetriesExhaustedError } from "../resilience/retry.ts";
+import { RpcConnectionError, RpcError } from "../rpc/errors.ts";
 import type { BitcoinNode } from "../rpc/node.ts";
 import { startTestNode, type TestNode } from "../testing/bitcoind.ts";
 import { checkNode, StartupCheckError } from "./startup.ts";
 import { ReorgTooDeepError, runSync, syncOnce, type SyncDeps } from "./sync.ts";
+import { InvalidBlockDataError } from "./transform.ts";
 
 describe("sync against regtest", () => {
   let db: TestDatabase;
@@ -246,5 +248,96 @@ describe("sync against regtest", () => {
     controller.abort();
 
     await expect(running).resolves.toBeUndefined();
+  });
+
+  const refused = () =>
+    new RpcConnectionError("getblockcount", "http://127.0.0.1:1", {
+      cause: new Error("ECONNREFUSED"),
+    });
+
+  it("runSync retries transient node errors and catches up", async () => {
+    let failures = 2;
+    const node: BitcoinNode = {
+      ...t.node,
+      getBlockCount: async () => {
+        if (failures > 0) {
+          failures -= 1;
+          throw refused();
+        }
+        return t.node.getBlockCount();
+      },
+    };
+    const controller = new AbortController();
+    const running = runSync(
+      { ...deps, node, pollIntervalMs: 50, backoff: { initialDelayMs: 1, maxDelayMs: 5 } },
+      controller.signal,
+    );
+    const nodeHeight = await t.node.getBlockCount();
+
+    await expect.poll(async () => (await tipOf())?.height, { timeout: 10_000 }).toBe(nodeHeight);
+    controller.abort();
+
+    await expect(running).resolves.toBeUndefined();
+    expect(failures).toBe(0);
+  });
+
+  it("runSync stops on a fatal error", async () => {
+    const node: BitcoinNode = {
+      ...t.node,
+      getBlock: async () => {
+        throw new InvalidBlockDataError("no fee");
+      },
+    };
+
+    await expect(
+      runSync({ ...deps, node, pollIntervalMs: 50 }, new AbortController().signal),
+    ).rejects.toBeInstanceOf(InvalidBlockDataError);
+  });
+
+  it("runSync gives up after 10 retries", async () => {
+    let attempts = 0;
+    const node: BitcoinNode = {
+      ...t.node,
+      getBlockCount: async () => {
+        attempts += 1;
+        throw refused();
+      },
+    };
+
+    await expect(
+      runSync(
+        { ...deps, node, pollIntervalMs: 50, backoff: { initialDelayMs: 1, maxDelayMs: 1 } },
+        new AbortController().signal,
+      ),
+    ).rejects.toBeInstanceOf(RetriesExhaustedError);
+    expect(attempts).toBe(11);
+  });
+
+  it("runSync stops promptly when aborted during a backoff wait", async () => {
+    let attempts = 0;
+    const node: BitcoinNode = {
+      ...t.node,
+      getBlockCount: async () => {
+        attempts += 1;
+        throw refused();
+      },
+    };
+    const controller = new AbortController();
+    const running = runSync(
+      {
+        ...deps,
+        node,
+        pollIntervalMs: 50,
+        backoff: { initialDelayMs: 60_000, maxDelayMs: 60_000 },
+      },
+      controller.signal,
+    );
+    await expect.poll(() => attempts, { timeout: 5_000 }).toBeGreaterThan(0);
+    const started = Date.now();
+
+    controller.abort();
+
+    await expect(running).resolves.toBeUndefined();
+    expect(Date.now() - started).toBeLessThan(2_000);
   });
 });

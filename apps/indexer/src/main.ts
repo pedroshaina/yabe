@@ -1,6 +1,8 @@
 import { createPrismaClient } from "@yabe/db";
 import { pino } from "pino";
 import { ConfigError, loadConfig } from "./config.ts";
+import { withRetry } from "./resilience/retry.ts";
+import { isTransient } from "./resilience/transient.ts";
 import { createBitcoinNode } from "./rpc/node.ts";
 import { checkNode } from "./sync/startup.ts";
 import { runSync } from "./sync/sync.ts";
@@ -30,7 +32,13 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
 
 try {
   logger.info({ network: config.network, rpc: config.rpc.url }, "starting indexer");
-  await checkNode(node, prisma, config.network);
+  // The node may still be starting (connection refused, then -28 warming up).
+  await withRetry(() => checkNode(node, prisma, config.network), {
+    isTransient,
+    signal: controller.signal,
+    onRetry: (error, attempt, delayMs) =>
+      logger.warn({ err: error, attempt, delayMs }, "startup check: transient error, retrying"),
+  });
   await runSync(
     {
       node,
@@ -44,8 +52,12 @@ try {
   );
   logger.info("stopped");
 } catch (error) {
-  logger.fatal({ err: error }, "indexer stopped on an error");
-  process.exitCode = 1;
+  if (controller.signal.aborted) {
+    logger.info("stopped");
+  } else {
+    logger.fatal({ err: error }, "indexer stopped on an error");
+    process.exitCode = 1;
+  }
 } finally {
   await prisma.$disconnect();
 }

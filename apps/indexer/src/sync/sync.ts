@@ -4,6 +4,8 @@ import type { Logger } from "pino";
 import type { Network } from "../chain/network.ts";
 import { RpcError } from "../rpc/errors.ts";
 import type { BitcoinNode } from "../rpc/node.ts";
+import { DEFAULT_BACKOFF, withRetry, type BackoffOptions } from "../resilience/retry.ts";
+import { isTransient } from "../resilience/transient.ts";
 import { blockToRows } from "./transform.ts";
 import { rollbackTo, writeBlock } from "./writer.ts";
 
@@ -129,16 +131,33 @@ export async function syncOnce(deps: SyncDeps, signal?: AbortSignal): Promise<Sy
   return { indexed, rolledBack, caughtUp: true };
 }
 
-/** Keeps the database at the node's tip until `signal` aborts. Stops between blocks. */
+/**
+ * Keeps the database at the node's tip until `signal` aborts. Transient
+ * failures are retried with backoff; anything else is rethrown. Stops between
+ * blocks, and promptly while waiting to retry.
+ */
 export async function runSync(
-  deps: SyncDeps & { pollIntervalMs: number },
+  deps: SyncDeps & { pollIntervalMs: number; backoff?: BackoffOptions },
   signal: AbortSignal,
 ): Promise<void> {
+  const { logger } = deps;
   while (!signal.aborted) {
-    const result = await syncOnce(deps, signal);
+    let result: SyncResult;
+    try {
+      result = await withRetry(() => syncOnce(deps, signal), {
+        isTransient,
+        signal,
+        backoff: deps.backoff ?? DEFAULT_BACKOFF,
+        onRetry: (error, attempt, delayMs) =>
+          logger.warn({ err: error, attempt, delayMs }, "transient error, retrying"),
+      });
+    } catch (error) {
+      if (signal.aborted) return;
+      throw error;
+    }
     if (result.indexed > 0 || result.rolledBack > 0) {
       const [tip] = await deps.prisma.$queryRawTyped(sql.selectTip());
-      deps.logger.info({ ...result, height: tip?.height }, "synced with the node");
+      logger.info({ ...result, height: tip?.height }, "synced with the node");
     }
     if (result.caughtUp) {
       await sleep(deps.pollIntervalMs, undefined, { signal }).catch(() => undefined);
