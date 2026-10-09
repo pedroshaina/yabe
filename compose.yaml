@@ -77,7 +77,10 @@ services:
         condition: service_completed_successfully
       bitcoind:
         condition: service_healthy
-    restart: unless-stopped
+    # A fatal error (reorg deeper than INDEXER_MAX_REORG_DEPTH, wrong network) exits 1 and
+    # would fail again on every restart, so give up after 5 attempts and stay exited for
+    # `docker compose logs yabe-indexer`. Outages it can ride out are retried in-process first.
+    restart: on-failure:5
     # Finishes the current block on SIGTERM; a large block can take a while.
     stop_grace_period: 1m
 
