@@ -58,6 +58,62 @@ services:
     restart: unless-stopped
     stop_grace_period: 5m
 
+  yabe-indexer:
+    build:
+      context: .
+      args:
+        APP: indexer
+    image: yabe-indexer
+    container_name: yabe-indexer
+    environment:
+      # Built here, not read from .env: the .env URLs point at 127.0.0.1 for host development.
+      INDEXER_DATABASE_URL: postgresql://yabe_indexer:${YABE_INDEXER_PASSWORD:?set YABE_INDEXER_PASSWORD in .env}@yabe-db:5432/${POSTGRES_DB:?set POSTGRES_DB in .env}
+      INDEXER_BITCOIN_NETWORK: signet
+      INDEXER_BITCOIN_RPC_URL: http://bitcoind:38332
+      INDEXER_BITCOIN_RPC_USER: ${INDEXER_BITCOIN_RPC_USER:?set INDEXER_BITCOIN_RPC_USER in .env}
+      INDEXER_BITCOIN_RPC_PASSWORD: ${INDEXER_BITCOIN_RPC_PASSWORD:?set INDEXER_BITCOIN_RPC_PASSWORD in .env}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    depends_on:
+      yabe-db-migration:
+        condition: service_completed_successfully
+      bitcoind:
+        condition: service_healthy
+    restart: unless-stopped
+    # Finishes the current block on SIGTERM; a large block can take a while.
+    stop_grace_period: 1m
+
+  yabe-api:
+    build:
+      context: .
+      args:
+        APP: api
+    image: yabe-api
+    container_name: yabe-api
+    environment:
+      API_DATABASE_URL: postgresql://yabe_api:${YABE_API_PASSWORD:?set YABE_API_PASSWORD in .env}@yabe-db:5432/${POSTGRES_DB:?set POSTGRES_DB in .env}
+      API_CORS_ORIGINS: ${API_CORS_ORIGINS:-}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      yabe-db-migration:
+        condition: service_completed_successfully
+    healthcheck:
+      # The image has no curl; Node's fetch checks /ready (the database answers).
+      # No spaces in the script: Podman splits exec-form healthcheck arguments on spaces.
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8080/ready').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
 volumes:
   yabe-db-data:
   bitcoind-data:
