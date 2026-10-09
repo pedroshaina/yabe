@@ -1,7 +1,7 @@
 import { sql, type PrismaClient } from "@yabe/db";
 import type { FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 import { z } from "zod";
-import { problemSchema } from "../problem.ts";
+import { HttpProblem, problemSchema } from "../problem.ts";
 
 const okSchema = z.object({ status: z.literal("ok") });
 const tipSchema = z
@@ -34,8 +34,15 @@ export const statusRoutes: FastifyPluginCallbackZod<{ prisma: PrismaClient }> = 
         response: { 200: okSchema, 503: problemSchema },
       },
     },
-    async () => {
-      await prisma.$queryRaw`SELECT 1`;
+    async (request) => {
+      try {
+        await prisma.$queryRaw`SELECT 1`;
+      } catch (error) {
+        // Any failure means not ready, including misconfiguration (wrong password,
+        // missing database) that data endpoints rightly report as 500.
+        request.log.warn({ err: error }, "readiness check failed");
+        throw new HttpProblem(503, "the database is not ready");
+      }
       return { status: "ok" as const };
     },
   );

@@ -63,6 +63,19 @@ describe("API skeleton", () => {
     }
   });
 
+  it("GET /ready is a 503 problem when the database rejects the credentials", async () => {
+    const url = new URL(db.apiUrl);
+    url.password = "wrong-password";
+    const rejected = createPrismaClient(url.toString());
+    const misconfigured = await buildApp({ prisma: rejected, corsOrigins: [], logger: false });
+    try {
+      expectProblem(await misconfigured.inject({ url: "/ready" }), 503);
+    } finally {
+      await misconfigured.close();
+      await rejected.$disconnect();
+    }
+  });
+
   it("GET /v1/status reports no tip on an empty database, then the tip", async () => {
     expect((await app.inject({ url: "/v1/status" })).json()).toEqual({ tip: null });
 
