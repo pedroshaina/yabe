@@ -29,5 +29,10 @@ export default defineConfig(
       ],
     },
   },
+  {
+    // Test stubs implement async interfaces with bodies that only throw or return.
+    files: ["**/*.test.ts"],
+    rules: { "@typescript-eslint/require-await": "off" },
+  },
   prettier,
 );

@@ -32,7 +32,13 @@ export function createRpcCall(options: RpcClientOptions): RpcCall {
       throw new RpcConnectionError(method, options.url, { cause });
     }
 
-    const text = await response.text();
+    let text: string;
+    try {
+      text = await response.text();
+    } catch (cause) {
+      // Headers arrived but the body broke off (reset, stall past the timeout).
+      throw new RpcConnectionError(method, options.url, { cause });
+    }
     let json: unknown;
     try {
       json = JSON.parse(text);
