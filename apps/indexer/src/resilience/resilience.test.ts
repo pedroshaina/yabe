@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { RpcConnectionError, RpcError, RpcHttpError, RpcResponseError } from "../rpc/errors.ts";
 import { InvalidBlockDataError } from "../sync/transform.ts";
-import { RetriesExhaustedError, withRetry } from "./retry.ts";
+import {
+  DEFAULT_MAX_RETRIES,
+  RetriesExhaustedError,
+  STUCK_AFTER_ATTEMPTS,
+  logRetry,
+  withRetry,
+} from "./retry.ts";
 import { isTransient } from "./transient.ts";
 
 /** Hand-built error shapes for classification rules; packages/db/src/connection.test.ts pins real ones against Postgres. */
@@ -205,4 +211,50 @@ describe("withRetry", () => {
     ).rejects.toBeInstanceOf(RpcConnectionError);
     expect(calls).toBe(1);
   });
+});
+
+describe("logRetry", () => {
+  function recordingLogger() {
+    const calls: { level: "warn" | "error"; fields: Record<string, unknown>; msg: string }[] = [];
+    const logger = {
+      warn: (fields: Record<string, unknown>, msg: string) =>
+        calls.push({ level: "warn", fields, msg }),
+      error: (fields: Record<string, unknown>, msg: string) =>
+        calls.push({ level: "error", fields, msg }),
+    };
+    return { logger, calls };
+  }
+
+  it("warns while retrying, then logs errors once retries stop making progress", () => {
+    const { logger, calls } = recordingLogger();
+    const onRetry = logRetry(logger, "startup check");
+    const error = unreachable();
+
+    for (const attempt of [
+      1,
+      STUCK_AFTER_ATTEMPTS - 1,
+      STUCK_AFTER_ATTEMPTS,
+      STUCK_AFTER_ATTEMPTS + 5,
+    ]) {
+      onRetry(error, attempt, 30_000);
+    }
+
+    expect(calls.map((c) => c.level)).toEqual(["warn", "warn", "error", "error"]);
+    expect(calls[0]).toMatchObject({
+      msg: "startup check: transient error, retrying",
+      fields: { err: error, attempt: 1, delayMs: 30_000 },
+    });
+    expect(calls[2]!.msg).toMatch(/no progress after 10 attempts/);
+    expect(calls[2]!.msg).toMatch(/down or misconfigured/);
+  });
+
+  it("keeps the plain message without a label", () => {
+    const { logger, calls } = recordingLogger();
+    logRetry(logger)(unreachable(), 1, 1_000);
+    expect(calls[0]!.msg).toBe("transient error, retrying");
+  });
+});
+
+it("withRetry has no retry cap by default", () => {
+  expect(DEFAULT_MAX_RETRIES).toBe(Number.POSITIVE_INFINITY);
 });

@@ -84,7 +84,7 @@ services:
     # Outages of the node or database are waited out in-process, so the indexer only exits on
     # a fatal error (reorg deeper than INDEXER_MAX_REORG_DEPTH, wrong network), which would
     # fail again on every restart: give up after 5 attempts and stay exited for
-    # `docker compose logs yabe-indexer`. `docker compose up` resets the count.
+    # `docker compose logs yabe-indexer`. The count resets when Compose starts or recreates it.
     restart: on-failure:5
     # Finishes the current block on SIGTERM; a large block can take a while.
     stop_grace_period: 1m

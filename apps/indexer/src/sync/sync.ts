@@ -4,7 +4,7 @@ import type { Logger } from "pino";
 import type { Network } from "../chain/network.ts";
 import { RpcError } from "../rpc/errors.ts";
 import type { BitcoinNode } from "../rpc/node.ts";
-import { DEFAULT_BACKOFF, withRetry, type BackoffOptions } from "../resilience/retry.ts";
+import { DEFAULT_BACKOFF, logRetry, withRetry, type BackoffOptions } from "../resilience/retry.ts";
 import { isTransient } from "../resilience/transient.ts";
 import { blockToRows } from "./transform.ts";
 import { rollbackTo, writeBlock } from "./writer.ts";
@@ -178,8 +178,7 @@ export async function runSync(
             progressed = false;
             return made;
           },
-          onRetry: (error, attempt, delayMs) =>
-            logger.warn({ err: error, attempt, delayMs }, "transient error, retrying"),
+          onRetry: logRetry(logger),
         },
       );
     } catch (error) {

@@ -1,7 +1,7 @@
 import { createPrismaClient } from "@yabe/db";
 import { pino } from "pino";
 import { ConfigError, loadConfig } from "./config.ts";
-import { withRetry } from "./resilience/retry.ts";
+import { logRetry, withRetry } from "./resilience/retry.ts";
 import { isTransient } from "./resilience/transient.ts";
 import { createBitcoinNode } from "./rpc/node.ts";
 import { checkNode } from "./sync/startup.ts";
@@ -36,8 +36,7 @@ try {
   await withRetry(() => checkNode(node, prisma, config.network), {
     isTransient,
     signal: controller.signal,
-    onRetry: (error, attempt, delayMs) =>
-      logger.warn({ err: error, attempt, delayMs }, "startup check: transient error, retrying"),
+    onRetry: logRetry(logger, "startup check"),
   });
   await runSync(
     {

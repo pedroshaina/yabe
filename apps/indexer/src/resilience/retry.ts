@@ -76,3 +76,33 @@ export async function withRetry<T>(operation: () => Promise<T>, options: RetryOp
     }
   }
 }
+
+/** The part of a pino logger that logRetry uses. */
+export interface RetryLogger {
+  warn(fields: object, msg: string): void;
+  error(fields: object, msg: string): void;
+}
+
+/** Failures in a row with no progress (about 3 minutes of backoff) before retries are logged as errors. */
+export const STUCK_AFTER_ATTEMPTS = 10;
+
+/**
+ * An `onRetry` that warns on each retry, then logs at error level once STUCK_AFTER_ATTEMPTS
+ * failures in a row have made no progress. Retries never stop, so this is how a long outage,
+ * or a misconfiguration that looks like one (a mistyped host, an RPC timeout too short for a
+ * large block), stands out in the logs.
+ */
+export function logRetry(logger: RetryLogger, label?: string) {
+  const prefix = label ? `${label}: ` : "";
+  return (error: unknown, attempt: number, delayMs: number) => {
+    const fields = { err: error, attempt, delayMs };
+    if (attempt >= STUCK_AFTER_ATTEMPTS) {
+      logger.error(
+        fields,
+        `${prefix}no progress after ${attempt} attempts; the node or database is down or misconfigured (check the URLs and INDEXER_BITCOIN_RPC_TIMEOUT_MS)`,
+      );
+    } else {
+      logger.warn(fields, `${prefix}transient error, retrying`);
+    }
+  };
+}
