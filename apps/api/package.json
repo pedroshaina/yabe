@@ -1,0 +1,27 @@
+{
+  "name": "@yabe/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "dev": "tsx --conditions=source --env-file-if-exists=../../.env src/main.ts",
+    "start": "node dist/main.js",
+    "openapi": "tsx --conditions=source scripts/openapi.ts",
+    "capture-asm": "tsx --conditions=source scripts/capture-core-asm.ts"
+  },
+  "dependencies": {
+    "@fastify/cors": "11.3.1",
+    "@fastify/helmet": "13.1.2",
+    "@fastify/swagger": "9.9.2",
+    "@fastify/swagger-ui": "6.1.2",
+    "@yabe/db": "workspace:*",
+    "fastify": "5.12.5",
+    "fastify-type-provider-zod": "7.0.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "testcontainers": "12.2.0"
+  }
+}
