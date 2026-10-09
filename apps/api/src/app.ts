@@ -12,6 +12,7 @@ import {
   type ZodTypeProvider,
 } from "fastify-type-provider-zod";
 import { problemErrorHandler, sendProblem } from "./problem.ts";
+import { blockRoutes } from "./routes/blocks.ts";
 import { statusRoutes } from "./routes/status.ts";
 
 export interface AppDeps {
@@ -57,6 +58,7 @@ export async function buildApp(deps: AppDeps) {
   app.get("/openapi.json", { schema: { hide: true } }, () => app.swagger());
 
   await app.register(statusRoutes, { prisma: deps.prisma });
+  await app.register(blockRoutes, { prefix: "/v1", prisma: deps.prisma });
 
   return app;
 }
