@@ -120,7 +120,7 @@ export const blockRoutes: FastifyPluginCallbackZod<{ prisma: PrismaClient }> = (
     async (request) => {
       const block = await prisma.block.findUnique({
         where: { hash: request.params.hash },
-        select: { height: true },
+        select: { height: true, txCount: true },
       });
       if (!block) throw notFound(`no block ${request.params.hash}`);
 
@@ -128,6 +128,8 @@ export const blockRoutes: FastifyPluginCallbackZod<{ prisma: PrismaClient }> = (
       const rows = await prisma.$queryRawTyped(
         sql.selectBlockTransactions(block.height, after, limit),
       );
+      // Positions run 0..txCount-1, so a page ending on the last one has nothing after it.
+      const last = rows.at(-1);
       return {
         transactions: rows.map((row) => ({
           txid: row.txid,
@@ -140,7 +142,8 @@ export const blockRoutes: FastifyPluginCallbackZod<{ prisma: PrismaClient }> = (
           totalInSat: toNumber(row.totalInSat),
           totalOutSat: toNumber(row.totalOutSat) ?? 0,
         })),
-        next: rows.length === limit ? (rows.at(-1)?.position ?? null) : null,
+        next:
+          rows.length === limit && last && last.position < block.txCount - 1 ? last.position : null,
       };
     },
   );

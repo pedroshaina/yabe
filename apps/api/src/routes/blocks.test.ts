@@ -181,6 +181,13 @@ describe("block endpoints", () => {
       expect(past).toEqual({ transactions: [], next: null });
     });
 
+    it("has no next cursor when the page ends on the block's last transaction", async () => {
+      const base = `/v1/blocks/${chain.blocks[1]!.hash}/transactions`;
+      const page = (await get(`${base}?limit=2`)).json<TransactionPage>();
+      expect(page.transactions.map((t) => t.position)).toEqual([0, 1]);
+      expect(page.next).toBeNull();
+    });
+
     it("is a 404 problem for an unknown block", async () => {
       expect((await get(`/v1/blocks/${"f".repeat(64)}/transactions`)).statusCode).toBe(404);
     });
