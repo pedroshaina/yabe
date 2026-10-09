@@ -5,7 +5,7 @@ RUN corepack enable
 WORKDIR /repo
 
 # Manifests first, so dependency installs are cached across source changes.
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc .pnpmfile.cjs ./
 COPY apps/api/package.json apps/api/
 COPY apps/indexer/package.json apps/indexer/
 COPY packages/db/package.json packages/db/

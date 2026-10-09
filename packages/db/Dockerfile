@@ -8,7 +8,7 @@ ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 RUN corepack enable
 
 WORKDIR /app
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc .pnpmfile.cjs ./
 COPY packages/db/package.json packages/db/
 # Keeps dev dependencies: the Prisma CLI that runs the migrations is one.
 RUN pnpm install --frozen-lockfile --filter @yabe/db

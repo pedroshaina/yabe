@@ -67,3 +67,10 @@ jobs:
             docker run --rm --entrypoint sh "yabe-$app" -c \
               'test "$(id -un)" = node && test ! -e /app/.env && node --input-type=module -e "await import(\"@yabe/db\"); await import(\"/app/dist/config.js\")"'
           done
+
+      - name: Images carry no build tooling (Prisma CLI, TypeScript)
+        run: |
+          for app in indexer api; do
+            docker run --rm --entrypoint sh "yabe-$app" -c \
+              '! ls /app/node_modules/.pnpm | grep -E "^(prisma|typescript)@"'
+          done

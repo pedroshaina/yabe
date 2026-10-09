@@ -2,6 +2,9 @@
   "name": "@yabe/api",
   "version": "0.0.0",
   "private": true,
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
