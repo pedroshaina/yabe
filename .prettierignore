@@ -5,3 +5,5 @@ yabe-backend/
 .internal/
 docker-compose.yml
 .superpowers/
+apps/api/src/script/__fixtures__/core-asm.json
+apps/api/openapi.json

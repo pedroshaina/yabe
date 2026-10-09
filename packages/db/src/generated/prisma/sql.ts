@@ -5,4 +5,6 @@
 // @ts-nocheck 
 export * from "./sql/markSpent.ts"
 
+export * from "./sql/selectBlockTransactions.ts"
+
 export * from "./sql/selectTip.ts"

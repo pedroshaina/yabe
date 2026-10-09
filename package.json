@@ -14,7 +14,9 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "db:generate": "pnpm --filter @yabe/db generate",
-    "dev:indexer": "pnpm --filter @yabe/indexer dev"
+    "dev:indexer": "pnpm --filter @yabe/indexer dev",
+    "dev:api": "pnpm --filter @yabe/api dev",
+    "openapi": "pnpm --filter @yabe/api openapi"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

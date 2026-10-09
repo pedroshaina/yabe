@@ -16,7 +16,7 @@ export async function checkNode(
   const expected = nodeChainName(network);
   if (chain !== expected) {
     throw new StartupCheckError(
-      `the node is on "${chain}" but BITCOIN_NETWORK=${network} expects "${expected}"`,
+      `the node is on "${chain}" but INDEXER_BITCOIN_NETWORK=${network} expects "${expected}"`,
     );
   }
 

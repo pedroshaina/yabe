@@ -14,7 +14,7 @@ export class ChainMismatchError extends Error {
   override name = "ChainMismatchError";
 }
 
-/** The fork point is more than MAX_REORG_DEPTH blocks below our tip. Fatal; nothing was deleted. */
+/** The fork point is more than INDEXER_MAX_REORG_DEPTH blocks below our tip. Fatal; nothing was deleted. */
 export class ReorgTooDeepError extends Error {
   override name = "ReorgTooDeepError";
 }
@@ -62,7 +62,7 @@ async function findCommonBlock(
     }
     if (tipHeight - (height - 1) > deps.maxReorgDepth) {
       throw new ReorgTooDeepError(
-        `the node's chain diverges more than ${deps.maxReorgDepth} blocks below our tip ${tipHeight}; refusing to roll back (MAX_REORG_DEPTH)`,
+        `the node's chain diverges more than ${deps.maxReorgDepth} blocks below our tip ${tipHeight}; refusing to roll back (INDEXER_MAX_REORG_DEPTH)`,
       );
     }
   }

@@ -4,7 +4,7 @@ import { InvalidBlockDataError } from "../sync/transform.ts";
 import { RetriesExhaustedError, withRetry } from "./retry.ts";
 import { isTransient } from "./transient.ts";
 
-/** Hand-built error shapes for classification rules; db-errors.test.ts pins real ones against Postgres. */
+/** Hand-built error shapes for classification rules; packages/db/src/connection.test.ts pins real ones against Postgres. */
 const prismaError = (code: string, meta?: unknown) =>
   Object.assign(new Error(`prisma ${code}`), { name: "PrismaClientKnownRequestError", code, meta });
 const adapterError = (sqlState: string) =>
