@@ -2,7 +2,7 @@ import { createPrismaClient, type PrismaClient } from "@yabe/db";
 import { hash, startTestDatabase, type TestDatabase } from "@yabe/db/testing";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { BlockRows, InputRow, OutputRow, TransactionRows } from "./transform.ts";
-import { IntegrityError, writeBlock } from "./writer.ts";
+import { IntegrityError, rollbackTo, writeBlock } from "./writer.ts";
 
 const out = (index: number, valueSat: bigint): OutputRow => ({
   index,
@@ -173,4 +173,45 @@ describe("writeBlock", () => {
       { txid: hash(0xa) },
     ]);
   });
+
+  it("rollbackTo removes blocks above the fork and un-spends what they spent", async () => {
+    await writeBlock(
+      prisma,
+      rows(1, [
+        tx(hash(0xb), 0, [coinbaseIn], [out(0, 5_000n)]),
+        tx(hash(0xc), 1, [spendIn(hash(0xa), 0)], [out(0, 900n)]),
+      ]),
+    );
+
+    expect(await rollbackTo(prisma, 0)).toBe(1);
+
+    expect(await prisma.block.count()).toBe(1);
+    expect(await prisma.transaction.count()).toBe(1);
+    const a0 = await prisma.transactionOutput.findFirstOrThrow({
+      where: { transaction: { txid: hash(0xa) }, index: 0 },
+    });
+    expect(a0.spentByTransactionId).toBeNull();
+  });
+
+  it("writes a block with 20,000 outputs and 7,000 inputs", async () => {
+    // Exceeds Postgres' 65,535 bind parameters per statement unless Prisma batches.
+    const outputs = Array.from({ length: 20_000 }, (_, i) => out(i, 1_000n));
+    await writeBlock(prisma, rows(1, [tx(hash(0xb), 0, [coinbaseIn], outputs)]));
+    const inputs = Array.from({ length: 7_000 }, (_, i) => ({
+      ...spendIn(hash(0xb), i),
+      index: i,
+    }));
+
+    await writeBlock(
+      prisma,
+      rows(2, [
+        tx(hash(0xc), 0, [coinbaseIn], [out(0, 5_000n)]),
+        tx(hash(0xd), 1, inputs, [out(0, 6_000_000n)]),
+      ]),
+    );
+
+    expect(
+      await prisma.transactionOutput.count({ where: { spentByTransactionId: { not: null } } }),
+    ).toBe(7_000);
+  }, 120_000);
 });

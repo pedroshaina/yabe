@@ -32,7 +32,14 @@ try {
   logger.info({ network: config.network, rpc: config.rpc.url }, "starting indexer");
   await checkNode(node, prisma, config.network);
   await runSync(
-    { node, prisma, network: config.network, logger, pollIntervalMs: config.pollIntervalMs },
+    {
+      node,
+      prisma,
+      network: config.network,
+      logger,
+      pollIntervalMs: config.pollIntervalMs,
+      maxReorgDepth: config.maxReorgDepth,
+    },
     controller.signal,
   );
   logger.info("stopped");

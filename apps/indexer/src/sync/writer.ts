@@ -53,3 +53,14 @@ export async function writeBlock(prisma: PrismaClient, rows: BlockRows): Promise
     { maxWait: 10_000, timeout: 60_000 },
   );
 }
+
+/**
+ * Removes every block above `forkHeight`. Cascades delete their transactions,
+ * inputs and outputs, and the spent-by foreign key (ON DELETE SET NULL)
+ * un-spends the earlier outputs their inputs had spent. One statement, so the
+ * rollback is atomic. Returns how many blocks were removed.
+ */
+export async function rollbackTo(prisma: PrismaClient, forkHeight: number): Promise<number> {
+  const { count } = await prisma.block.deleteMany({ where: { height: { gt: forkHeight } } });
+  return count;
+}
