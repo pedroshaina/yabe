@@ -1,0 +1,21 @@
+{
+  "name": "@yabe/indexer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "dev": "tsx watch --conditions=source --env-file-if-exists=../../.env src/main.ts",
+    "start": "node dist/main.js",
+    "rpcauth": "tsx scripts/rpcauth.ts"
+  },
+  "dependencies": {
+    "@yabe/db": "workspace:*",
+    "pino": "10.4.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "testcontainers": "12.2.0"
+  }
+}
