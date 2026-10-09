@@ -38,5 +38,10 @@ jobs:
           pnpm db:generate
           git diff --exit-code -- packages/db/src/generated
 
+      - name: OpenAPI contract is up to date
+        run: |
+          pnpm openapi
+          test -z "$(git status --porcelain -- apps/api/openapi.json)"
+
       - name: Test
         run: pnpm test
