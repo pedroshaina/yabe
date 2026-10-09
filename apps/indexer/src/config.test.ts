@@ -16,6 +16,7 @@ describe("loadConfig", () => {
       network: "signet",
       rpc: { url: valid.BITCOIN_RPC_URL, user: "yabe", password: "rpc-secret", timeoutMs: 30_000 },
       pollIntervalMs: 5_000,
+      maxReorgDepth: 100,
       logLevel: "info",
     });
   });
@@ -24,10 +25,12 @@ describe("loadConfig", () => {
     const config = loadConfig({
       ...valid,
       POLL_INTERVAL_MS: "250",
+      MAX_REORG_DEPTH: "5",
       BITCOIN_RPC_TIMEOUT_MS: "1000",
     });
     expect(config.pollIntervalMs).toBe(250);
     expect(config.rpc.timeoutMs).toBe(1_000);
+    expect(config.maxReorgDepth).toBe(5);
   });
 
   it("names every missing or invalid variable", () => {

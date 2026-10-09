@@ -13,10 +13,17 @@ const WALLET = "test";
 export interface TestNode {
   rpc: RpcClientOptions;
   node: BitcoinNode;
-  /** Mines `blocks` blocks to the test wallet; returns their hashes. */
+  /**
+   * Mines `blocks` blocks to a fresh wallet address; returns their hashes. A fresh
+   * address per call makes blocks mined after `invalidate` differ from the invalidated ones.
+   */
   mine(blocks: number): Promise<string[]>;
   /** Sends `btc` to a new wallet address; returns the txid (unconfirmed until mined). */
   send(btc: number): Promise<string>;
+  /** Marks a block invalid: the node switches to the best chain without it. */
+  invalidate(hash: string): Promise<void>;
+  /** Undoes `invalidate`. */
+  reconsider(hash: string): Promise<void>;
   stop(): Promise<void>;
 }
 
@@ -50,15 +57,19 @@ export async function startTestNode(): Promise<TestNode> {
     await container.stop();
     throw error;
   }
-  const miningAddress = await wallet("getnewaddress", [], z.string());
+  const newAddress = () => wallet("getnewaddress", [], z.string());
 
   return {
     rpc,
     node: createBitcoinNode(rpc),
-    mine: (blocks) => wallet("generatetoaddress", [blocks, miningAddress], z.array(z.string())),
-    send: async (btc) => {
-      const address = await wallet("getnewaddress", [], z.string());
-      return wallet("sendtoaddress", [address, btc], z.string());
+    mine: async (blocks) =>
+      wallet("generatetoaddress", [blocks, await newAddress()], z.array(z.string())),
+    send: async (btc) => wallet("sendtoaddress", [await newAddress(), btc], z.string()),
+    invalidate: async (hash) => {
+      await call("invalidateblock", [hash], z.unknown());
+    },
+    reconsider: async (hash) => {
+      await call("reconsiderblock", [hash], z.unknown());
     },
     stop: async () => {
       await container.stop();

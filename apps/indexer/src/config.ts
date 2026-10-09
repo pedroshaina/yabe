@@ -15,6 +15,7 @@ const envSchema = z.object({
   BITCOIN_RPC_PASSWORD: z.string().min(1),
   BITCOIN_RPC_TIMEOUT_MS: z.coerce.number().int().positive().default(30_000),
   POLL_INTERVAL_MS: z.coerce.number().int().positive().default(5_000),
+  MAX_REORG_DEPTH: z.coerce.number().int().positive().default(100),
   LOG_LEVEL: z.enum(LOG_LEVELS).default("info"),
 });
 
@@ -23,6 +24,7 @@ export interface Config {
   network: Network;
   rpc: { url: string; user: string; password: string; timeoutMs: number };
   pollIntervalMs: number;
+  maxReorgDepth: number;
   logLevel: LogLevel;
 }
 
@@ -49,6 +51,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       timeoutMs: e.BITCOIN_RPC_TIMEOUT_MS,
     },
     pollIntervalMs: e.POLL_INTERVAL_MS,
+    maxReorgDepth: e.MAX_REORG_DEPTH,
     logLevel: e.LOG_LEVEL,
   };
 }
