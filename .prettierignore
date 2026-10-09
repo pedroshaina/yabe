@@ -1,0 +1,7 @@
+pnpm-lock.yaml
+**/generated/
+**/dist/
+yabe-backend/
+.internal/
+docker-compose.yml
+.superpowers/
