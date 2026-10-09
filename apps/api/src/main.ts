@@ -13,7 +13,9 @@ try {
   throw error;
 }
 
-const prisma = createPrismaClient(config.databaseUrl);
+// A stalled query ends as a 503 ("Query read timeout" is a connection failure) instead of
+// holding a pool connection for the client default of 120 s.
+const prisma = createPrismaClient(config.databaseUrl, { queryTimeoutMs: config.queryTimeoutMs });
 const app = await buildApp({
   prisma,
   corsOrigins: config.corsOrigins,

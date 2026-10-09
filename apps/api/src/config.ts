@@ -17,6 +17,7 @@ const envSchema = z.object({
         .map((origin) => origin.trim())
         .filter(Boolean),
     ),
+  API_QUERY_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
   LOG_LEVEL: z.enum(LOG_LEVELS).default("info"),
 });
 
@@ -26,6 +27,7 @@ export interface Config {
   port: number;
   corsOrigins: string[];
   logLevel: LogLevel;
+  queryTimeoutMs: number;
 }
 
 export class ConfigError extends Error {
@@ -47,5 +49,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     port: e.API_PORT,
     corsOrigins: e.API_CORS_ORIGINS,
     logLevel: e.LOG_LEVEL,
+    queryTimeoutMs: e.API_QUERY_TIMEOUT_MS,
   };
 }

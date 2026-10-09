@@ -29,6 +29,16 @@ export async function buildApp(deps: AppDeps) {
     bodyLimit: 1_024,
     connectionTimeout: 10_000,
     requestTimeout: 30_000,
+    // Errors Fastify raises before routing (e.g. a malformed percent-encoded URL)
+    // bypass the error handler; answer them as problems too.
+    frameworkErrors: (error, _request, reply) => {
+      const badUrl = error.code === "FST_ERR_BAD_URL";
+      void sendProblem(
+        reply,
+        badUrl ? 400 : 500,
+        badUrl ? "the request URL is malformed" : "an unexpected error occurred",
+      );
+    },
   }).withTypeProvider<ZodTypeProvider>();
 
   app.setValidatorCompiler(validatorCompiler);

@@ -31,8 +31,27 @@ export const blockIdSchema = z
     /^\d+$/.test(value) ? { height: Number(value) } : { hash: value.toLowerCase() },
   );
 
+/**
+ * A non-negative integer query parameter written as plain digits. Rejects "",
+ * " ", "1e1", "0x10" and "5.0", which `z.coerce.number()` would accept.
+ */
+export const digitsSchema = (min: number, max: number) =>
+  z
+    .string()
+    .regex(/^\d{1,10}$/, "must be a non-negative integer written in digits")
+    .transform(Number)
+    .pipe(z.number().int().min(min).max(max));
+
+/** Page size; the range and default are described because OpenAPI can't show them on a digit string. */
 export const limitSchema = (fallback: number) =>
-  z.coerce.number().int().min(1).max(100).default(fallback);
+  digitsSchema(1, 100)
+    .default(fallback)
+    .meta({ description: `Page size, 1 to 100 (default ${fallback})` });
+
+/** A pagination cursor: the `next` value of the previous page. */
+export const cursorSchema = digitsSchema(0, INT4_MAX)
+  .optional()
+  .meta({ description: "The `next` value of the previous page; omit for the first page" });
 
 export const blockSummarySchema = z
   .object({

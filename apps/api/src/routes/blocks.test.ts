@@ -75,6 +75,15 @@ describe("block endpoints", () => {
       },
     );
 
+    it.each(["limit=", "before=", "limit=1e1", "before=0x10", "before=%20", "limit=5.0"])(
+      "rejects non-digit %s with a 400 problem",
+      async (query) => {
+        const response = await get(`/v1/blocks?${query}`);
+        expect(response.statusCode).toBe(400);
+        expect(response.headers["content-type"]).toMatch(/problem\+json/);
+      },
+    );
+
     it("is a 503 problem when the database is down", async () => {
       const down = createPrismaClient("postgresql://yabe_api:x@127.0.0.1:1/yabe", {
         connectionTimeoutMs: 500,
@@ -187,6 +196,14 @@ describe("block endpoints", () => {
       expect(page.transactions.map((t) => t.position)).toEqual([0, 1]);
       expect(page.next).toBeNull();
     });
+
+    it.each(["after=", "after=-1", "after=1e0", "limit=0x1"])(
+      "rejects %s with a 400 problem",
+      async (query) => {
+        const response = await get(`/v1/blocks/${chain.blocks[1]!.hash}/transactions?${query}`);
+        expect(response.statusCode).toBe(400);
+      },
+    );
 
     it("is a 404 problem for an unknown block", async () => {
       expect((await get(`/v1/blocks/${"f".repeat(64)}/transactions`)).statusCode).toBe(404);
