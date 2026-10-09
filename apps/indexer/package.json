@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json",
-    "dev": "tsx watch --conditions=source --env-file-if-exists=../../.env src/main.ts",
+    "dev": "tsx --conditions=source --env-file-if-exists=../../.env src/main.ts",
     "start": "node dist/main.js",
     "rpcauth": "tsx scripts/rpcauth.ts"
   },

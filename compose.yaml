@@ -3,11 +3,11 @@ services:
     image: postgres:18-alpine
     container_name: yabe-db
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-      YABE_INDEXER_PASSWORD: ${YABE_INDEXER_PASSWORD}
-      YABE_API_PASSWORD: ${YABE_API_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
+      YABE_INDEXER_PASSWORD: ${YABE_INDEXER_PASSWORD:?set YABE_INDEXER_PASSWORD in .env}
+      YABE_API_PASSWORD: ${YABE_API_PASSWORD:?set YABE_API_PASSWORD in .env}
     volumes:
       - yabe-db-data:/var/lib/postgresql
       - ./packages/db/initdb:/docker-entrypoint-initdb.d:ro
@@ -29,11 +29,35 @@ services:
       dockerfile: packages/db/Dockerfile
     container_name: yabe-db-migration
     environment:
-      DATABASE_URL: postgresql://yabe_indexer:${YABE_INDEXER_PASSWORD}@yabe-db:5432/${POSTGRES_DB}
+      DATABASE_URL: postgresql://yabe_indexer:${YABE_INDEXER_PASSWORD:?set YABE_INDEXER_PASSWORD in .env}@yabe-db:5432/${POSTGRES_DB:?set POSTGRES_DB in .env}
     depends_on:
       yabe-db:
         condition: service_healthy
     restart: "no"
 
+  bitcoind:
+    image: bitcoin/bitcoin:31.1
+    container_name: bitcoind
+    command:
+      - -signet
+      - -server
+      - -rpcbind=0.0.0.0
+      - -rpcallowip=0.0.0.0/0
+      - -rpcauth=${BITCOIN_RPC_AUTH:?set BITCOIN_RPC_AUTH in .env (pnpm --filter @yabe/indexer rpcauth)}
+    volumes:
+      - bitcoind-data:/home/bitcoin/.bitcoin
+    ports:
+      - "127.0.0.1:38332:38332"
+    healthcheck:
+      test:
+        ["CMD", "bitcoin-cli", "-signet", "-datadir=/home/bitcoin/.bitcoin", "getblockchaininfo"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+    stop_grace_period: 5m
+
 volumes:
   yabe-db-data:
+  bitcoind-data:
