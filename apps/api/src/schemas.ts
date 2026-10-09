@@ -86,3 +86,55 @@ export const transactionSummarySchema = z
 
 export const toNumber = (value: bigint | number | null): number | null =>
   value === null ? null : Number(value);
+
+const scriptSchema = z.object({ hex: z.string(), asm: z.string() }).meta({ id: "Script" });
+
+export const transactionSchema = z
+  .object({
+    txid: z.string(),
+    blockHash: z.string(),
+    blockHeight: z.number().int(),
+    blockTime: z.number().int(),
+    position: z.number().int(),
+    confirmations: z.number().int(),
+    version: z.number().int(),
+    locktime: z.number().int(),
+    size: z.number().int(),
+    vsize: z.number().int(),
+    weight: z.number().int(),
+    isCoinbase: z.boolean(),
+    feeSat: z.number().int().nullable(),
+    feeRate: z.number().nullable().describe("sat/vB"),
+    inputs: z.array(
+      z.object({
+        index: z.number().int(),
+        coinbaseHex: z.string().nullable(),
+        prevTxid: z.string().nullable(),
+        prevIndex: z.number().int().nullable(),
+        valueSat: z.number().int().nullable(),
+        address: z.string().nullable(),
+        scriptType: z.string().nullable(),
+        scriptSig: scriptSchema.nullable(),
+        witness: z.array(z.string()),
+        sequence: z.number().int(),
+      }),
+    ),
+    outputs: z.array(
+      z.object({
+        index: z.number().int(),
+        valueSat: z.number().int(),
+        address: z.string().nullable(),
+        scriptType: z.string(),
+        script: scriptSchema,
+        spentBy: z.object({ txid: z.string(), inputIndex: z.number().int() }).nullable(),
+      }),
+    ),
+  })
+  .meta({ id: "Transaction" });
+
+export const searchResultSchema = z
+  .discriminatedUnion("type", [
+    z.object({ type: z.literal("block"), hash: z.string(), height: z.number().int() }),
+    z.object({ type: z.literal("transaction"), txid: z.string() }),
+  ])
+  .meta({ id: "SearchResult" });

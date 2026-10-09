@@ -13,7 +13,9 @@ import {
 } from "fastify-type-provider-zod";
 import { problemErrorHandler, sendProblem } from "./problem.ts";
 import { blockRoutes } from "./routes/blocks.ts";
+import { searchRoutes } from "./routes/search.ts";
 import { statusRoutes } from "./routes/status.ts";
+import { transactionRoutes } from "./routes/transactions.ts";
 
 export interface AppDeps {
   prisma: PrismaClient;
@@ -59,6 +61,8 @@ export async function buildApp(deps: AppDeps) {
 
   await app.register(statusRoutes, { prisma: deps.prisma });
   await app.register(blockRoutes, { prefix: "/v1", prisma: deps.prisma });
+  await app.register(transactionRoutes, { prefix: "/v1", prisma: deps.prisma });
+  await app.register(searchRoutes, { prefix: "/v1", prisma: deps.prisma });
 
   return app;
 }
