@@ -1,16 +1,16 @@
 import { createServer, type Server, type Socket } from "node:net";
 import type { AddressInfo } from "node:net";
-import { createPrismaClient, sql, type PrismaClient } from "@yabe/db";
-import { startTestDatabase, type TestDatabase } from "@yabe/db/testing";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { isTransient } from "./transient.ts";
+import { isDatabaseUnavailable } from "./connection.ts";
+import { createPrismaClient, sql, type PrismaClient } from "./index.ts";
+import { startTestDatabase, type TestDatabase } from "./testing/database.ts";
 
 /**
  * Real connection failures from Prisma 7 + @prisma/adapter-pg against Postgres,
  * not hand-built shapes: each surfaces differently depending on whether it hits
  * a model query, a raw (TypedSQL) query or a transaction boundary.
  */
-describe("database connection failures are transient", () => {
+describe("database connection failures are detected as unavailable", () => {
   let db: TestDatabase;
   let superuser: PrismaClient;
 
@@ -35,7 +35,7 @@ describe("database connection failures are transient", () => {
       name,
       code,
       message: message?.split("\n").filter(Boolean).pop(),
-      transient: isTransient(error),
+      transient: isDatabaseUnavailable(error),
     };
   }
 
