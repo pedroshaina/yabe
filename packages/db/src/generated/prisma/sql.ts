@@ -3,4 +3,6 @@
 /* eslint-disable */
 // biome-ignore-all lint: generated file
 // @ts-nocheck 
+export * from "./sql/markSpent.ts"
+
 export * from "./sql/selectTip.ts"
