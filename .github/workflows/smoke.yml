@@ -1,0 +1,21 @@
+name: Smoke
+
+# The whole Compose stack on regtest. It builds every image and runs bitcoind, so it is
+# too slow for every PR: it runs when deploying to production (a push to master) or by hand.
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Configure the stack from the example environment
+        run: cp .env.example .env
+
+      - name: Run the smoke test
+        run: ./scripts/smoke.sh
