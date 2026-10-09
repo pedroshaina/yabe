@@ -17,7 +17,8 @@ cleanup() {
     echo "smoke test failed; recent logs:" >&2
     compose logs --no-color --tail=100 >&2 || true
   fi
-  compose down -v --remove-orphans >/dev/null 2>&1 || true
+  # --rmi local: also remove the images this project built (Compose names them per project).
+  compose down -v --remove-orphans --rmi local >/dev/null 2>&1 || true
   exit "$status"
 }
 trap cleanup EXIT

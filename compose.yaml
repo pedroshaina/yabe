@@ -63,7 +63,6 @@ services:
       context: .
       args:
         APP: indexer
-    image: yabe-indexer
     container_name: yabe-indexer
     environment:
       # Built here, not read from .env: the .env URLs point at 127.0.0.1 for host development.
@@ -87,7 +86,6 @@ services:
       context: .
       args:
         APP: api
-    image: yabe-api
     container_name: yabe-api
     environment:
       API_DATABASE_URL: postgresql://yabe_api:${YABE_API_PASSWORD:?set YABE_API_PASSWORD in .env}@yabe-db:5432/${POSTGRES_DB:?set POSTGRES_DB in .env}
