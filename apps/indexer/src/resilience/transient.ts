@@ -23,6 +23,27 @@ const TRANSIENT_DB_CODES = new Set([
 const isConnectionSqlState = (state: string): boolean =>
   state.startsWith("08") || ["57P01", "57P02", "57P03"].includes(state);
 
+/**
+ * At transaction boundaries (BEGIN/COMMIT) Prisma 7 does not wrap driver
+ * failures: the adapter's DriverAdapterError, or pg's own error, escapes as is.
+ */
+const TRANSIENT_ADAPTER_KINDS = new Set([
+  "ConnectionClosed",
+  "DatabaseNotReachable",
+  "SocketTimeout",
+]);
+/** pg's messages for a connection the server closed; pg sets no `code` on these. */
+const PG_CONNECTION_CLOSED = /^Connection terminated( unexpectedly)?$/;
+
+function isTransientAdapterError(error: Error): boolean {
+  const kind = (error.cause as { kind?: unknown } | undefined)?.kind;
+  return (
+    error.name === "DriverAdapterError" &&
+    typeof kind === "string" &&
+    TRANSIENT_ADAPTER_KINDS.has(kind)
+  );
+}
+
 interface PrismaKnownError {
   name: "PrismaClientKnownRequestError";
   code: string;
@@ -46,6 +67,12 @@ export function isTransient(error: unknown): boolean {
   if (error instanceof RpcConnectionError) return true;
   if (error instanceof RpcError) return error.code === RPC_IN_WARMUP;
   if (error instanceof RpcHttpError) return TRANSIENT_HTTP_STATUSES.has(error.status);
+  if (
+    error instanceof Error &&
+    (isTransientAdapterError(error) || PG_CONNECTION_CLOSED.test(error.message))
+  ) {
+    return true;
+  }
   if (isPrismaKnownError(error)) {
     if (TRANSIENT_DB_CODES.has(error.code)) return true;
     const state = error.meta?.driverAdapterError?.cause?.originalCode;

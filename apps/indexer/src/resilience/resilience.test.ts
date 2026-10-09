@@ -12,6 +12,9 @@ const adapterError = (sqlState: string) =>
     modelName: "Block",
     driverAdapterError: { name: "DriverAdapterError", cause: { originalCode: sqlState } },
   });
+/** A Prisma 7 transaction-boundary failure: the adapter's error, not wrapped by the client. */
+const driverAdapterError = (kind: string) =>
+  Object.assign(new Error(kind), { name: "DriverAdapterError", cause: { kind } });
 const unreachable = () =>
   new RpcConnectionError("getblockcount", "http://127.0.0.1:1", {
     cause: new Error("ECONNREFUSED"),
@@ -27,6 +30,16 @@ describe("isTransient", () => {
     ["database connection killed (57P01)", adapterError("57P01")],
     ["database connection failure (08006)", adapterError("08006")],
     ["database pool timeout (P2024)", prismaError("P2024")],
+    // Captured from the live signet run: Postgres restarted between statements of a
+    // block's transaction. pg sets no code; the adapter re-throws it unwrapped.
+    [
+      "database closed the connection (pg, no code)",
+      new Error("Connection terminated unexpectedly"),
+    ],
+    // Captured with a TCP proxy cutting the connection right before COMMIT.
+    ["database connection lost at commit (adapter)", driverAdapterError("ConnectionClosed")],
+    ["database not reachable (adapter)", driverAdapterError("DatabaseNotReachable")],
+    ["database socket timeout (adapter)", driverAdapterError("SocketTimeout")],
   ])("%s is transient", (_label, error) => {
     expect(isTransient(error)).toBe(true);
   });
@@ -39,6 +52,8 @@ describe("isTransient", () => {
     ["unique violation (P2002)", prismaError("P2002")],
     ["interactive transaction timeout (P2028)", prismaError("P2028")],
     ["constraint error via the adapter (23505)", adapterError("23505")],
+    ["other adapter error (LengthMismatch)", driverAdapterError("LengthMismatch")],
+    ["unrelated error mentioning a connection", new Error("Connection pool config invalid")],
     ["plain error", new Error("boom")],
     ["non-error value", "boom"],
   ])("%s is fatal", (_label, error) => {
