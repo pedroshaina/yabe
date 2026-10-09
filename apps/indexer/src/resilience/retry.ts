@@ -6,8 +6,12 @@ export interface BackoffOptions {
 }
 
 export const DEFAULT_BACKOFF: BackoffOptions = { initialDelayMs: 1_000, maxDelayMs: 30_000 };
-/** About 3 minutes with the default backoff (1+2+4+8+16+30×5 s, before jitter). */
-export const DEFAULT_MAX_RETRIES = 10;
+/**
+ * No cap by default: an unreachable node or database is waited out at the 30 s backoff
+ * ceiling for as long as it lasts, so only genuinely fatal errors stop the indexer (and
+ * count against its container restart limit).
+ */
+export const DEFAULT_MAX_RETRIES = Number.POSITIVE_INFINITY;
 
 /** A transient failure persisted through every retry. Fatal; `cause` is the last error. */
 export class RetriesExhaustedError extends Error {
@@ -24,7 +28,7 @@ export interface RetryOptions {
   isTransient: (error: unknown) => boolean;
   signal?: AbortSignal;
   backoff?: BackoffOptions;
-  /** Retries after the first attempt before giving up; defaults to DEFAULT_MAX_RETRIES. */
+  /** Retries after the first attempt before giving up; defaults to DEFAULT_MAX_RETRIES (no cap). */
   maxRetries?: number;
   /**
    * Called after each failure: true when the operation made progress since the
@@ -39,8 +43,8 @@ export interface RetryOptions {
 /**
  * Runs `operation`, retrying transient failures with exponential backoff and
  * 50–100% jitter. A fatal error is rethrown at once; if `signal` aborts
- * (including mid-wait) the last error is rethrown; after `maxRetries` failed
- * retries it throws RetriesExhaustedError.
+ * (including mid-wait) the last error is rethrown; with a `maxRetries` cap, it
+ * throws RetriesExhaustedError once that many retries have failed.
  */
 export async function withRetry<T>(operation: () => Promise<T>, options: RetryOptions): Promise<T> {
   const { initialDelayMs, maxDelayMs } = options.backoff ?? DEFAULT_BACKOFF;

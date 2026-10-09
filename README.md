@@ -49,7 +49,7 @@ Open **http://127.0.0.1:8080/docs** to explore the API. The node first syncs sig
 
 Every port is published on 127.0.0.1 only (API 8080, Postgres 5432, RPC 38332), so nothing is reachable from your network.
 
-**If the indexer stops.** It retries brief outages of the node or the database by itself. An error it can't recover from (a chain reorganisation deeper than `INDEXER_MAX_REORG_DEPTH`, a node on the wrong network, or an outage longer than its retries) makes it exit; Compose restarts it up to 5 times and then leaves it stopped rather than restarting forever. `docker compose ps -a` shows it as exited, `docker compose logs yabe-indexer` says why, and `docker compose up -d yabe-indexer` starts it again once the cause is fixed. After a host or Docker restart, run `docker compose up -d`.
+**If the indexer stops.** It waits out outages of the node or the database however long they last, retrying at most every 30 seconds. It exits only on an error a restart can't fix: a chain reorganisation deeper than `INDEXER_MAX_REORG_DEPTH`, or a node on the wrong network. The container is then restarted up to 5 times (counted since the last `docker compose up`) and left stopped rather than restarting forever. `docker compose ps -a` shows it as exited and `docker compose logs yabe-indexer` says why. Once the cause is fixed (for example a larger `INDEXER_MAX_REORG_DEPTH` in `.env`), `docker compose up -d yabe-indexer` starts it again and resets the count. After a host or Docker restart, run `docker compose up -d`: on Docker the other services come back by themselves but the indexer does not, and on Podman none of them do.
 
 ## The API
 
