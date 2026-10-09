@@ -11,7 +11,12 @@ describe("loadConfig", () => {
       port: 8080,
       corsOrigins: [],
       logLevel: "info",
+      queryTimeoutMs: 10_000,
     });
+  });
+
+  it("reads the query timeout", () => {
+    expect(loadConfig({ ...valid, API_QUERY_TIMEOUT_MS: "2500" }).queryTimeoutMs).toBe(2_500);
   });
 
   it("parses a comma-separated CORS allow-list and a port", () => {

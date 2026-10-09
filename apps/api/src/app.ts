@@ -29,6 +29,16 @@ export async function buildApp(deps: AppDeps) {
     bodyLimit: 1_024,
     connectionTimeout: 10_000,
     requestTimeout: 30_000,
+    // Errors Fastify raises before routing (a malformed percent-encoded URL, a path
+    // parameter over maxParamLength) bypass the error handler; answer them as problems too.
+    frameworkErrors: (error, request, reply) => {
+      if (error.code === "FST_ERR_BAD_URL" || error.code === "FST_ERR_MAX_PARAM_LENGTH") {
+        void sendProblem(reply, 400, "the request URL is malformed or too long");
+        return;
+      }
+      request.log.error({ err: error }, "unexpected framework error");
+      void sendProblem(reply, 500, "an unexpected error occurred");
+    },
   }).withTypeProvider<ZodTypeProvider>();
 
   app.setValidatorCompiler(validatorCompiler);

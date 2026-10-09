@@ -45,3 +45,25 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+  images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build the indexer image
+        run: docker build --build-arg APP=indexer -t yabe-indexer .
+
+      - name: Build the API image
+        run: docker build --build-arg APP=api -t yabe-api .
+
+      - name: Build the migration image
+        run: docker build -f packages/db/Dockerfile -t yabe-db-migration .
+
+      - name: Images run as node, carry no .env, and resolve their modules
+        run: |
+          for app in indexer api; do
+            docker run --rm --entrypoint sh "yabe-$app" -c \
+              'test "$(id -un)" = node && test ! -e /app/.env && node --input-type=module -e "await import(\"@yabe/db\"); await import(\"/app/dist/config.js\")"'
+          done

@@ -3,5 +3,8 @@
 .git
 .internal
 .superpowers
-yabe-backend
 .env
+.env.*
+!.env.example
+logs
+*.log

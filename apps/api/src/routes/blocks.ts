@@ -3,10 +3,10 @@ import type { FastifyPluginCallbackZod } from "fastify-type-provider-zod";
 import { z } from "zod";
 import { notFound, problemResponses } from "../problem.ts";
 import {
-  INT4_MAX,
   blockIdSchema,
   blockSchema,
   blockSummarySchema,
+  cursorSchema,
   hashSchema,
   limitSchema,
   toNumber,
@@ -26,7 +26,7 @@ export const blockRoutes: FastifyPluginCallbackZod<{ prisma: PrismaClient }> = (
         tags: ["blocks"],
         querystring: z.object({
           limit: limitSchema(20),
-          before: z.coerce.number().int().min(0).max(INT4_MAX).optional(),
+          before: cursorSchema,
         }),
         response: {
           200: z.object({ blocks: z.array(blockSummarySchema), next: z.number().int().nullable() }),
@@ -106,7 +106,7 @@ export const blockRoutes: FastifyPluginCallbackZod<{ prisma: PrismaClient }> = (
         params: z.object({ hash: hashSchema }),
         querystring: z.object({
           limit: limitSchema(25),
-          after: z.coerce.number().int().min(-1).max(INT4_MAX).default(-1),
+          after: cursorSchema,
         }),
         response: {
           200: z.object({
@@ -124,7 +124,9 @@ export const blockRoutes: FastifyPluginCallbackZod<{ prisma: PrismaClient }> = (
       });
       if (!block) throw notFound(`no block ${request.params.hash}`);
 
-      const { limit, after } = request.query;
+      const { limit } = request.query;
+      // No cursor means "from the first transaction": positions start at 0.
+      const after = request.query.after ?? -1;
       const rows = await prisma.$queryRawTyped(
         sql.selectBlockTransactions(block.height, after, limit),
       );

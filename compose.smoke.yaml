@@ -1,0 +1,45 @@
+# Regtest overlay for scripts/smoke.sh, which runs it as Compose project "yabe-smoke".
+# Its own container names, volumes and API port keep it away from the signet stack.
+services:
+  yabe-db:
+    container_name: yabe-smoke-db
+    ports: !reset []
+
+  yabe-db-migration:
+    container_name: yabe-smoke-db-migration
+
+  bitcoind:
+    container_name: yabe-smoke-bitcoind
+    command: !override
+      - -regtest
+      - -server
+      - -rpcbind=0.0.0.0
+      - -rpcallowip=0.0.0.0/0
+      # Same port as signet, so the indexer's RPC URL needn't change.
+      - -rpcport=38332
+      # Regtest has no fee estimates; the wallet needs a fallback to send.
+      - -fallbackfee=0.0001
+      - -rpcauth=${BITCOIN_RPC_AUTH:?set BITCOIN_RPC_AUTH in .env}
+    ports: !reset []
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "bitcoin-cli",
+          "-regtest",
+          "-rpcport=38332",
+          "-datadir=/home/bitcoin/.bitcoin",
+          "getblockchaininfo",
+        ]
+      start_period: 5s
+
+  yabe-indexer:
+    container_name: yabe-smoke-indexer
+    environment:
+      INDEXER_BITCOIN_NETWORK: regtest
+      INDEXER_POLL_INTERVAL_MS: "1000"
+
+  yabe-api:
+    container_name: yabe-smoke-api
+    ports: !override
+      - "127.0.0.1:${SMOKE_API_PORT:-18080}:8080"

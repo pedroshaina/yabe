@@ -1227,24 +1227,23 @@
         "parameters": [
           {
             "schema": {
-              "default": 20,
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100
+              "type": "string",
+              "pattern": "^\\d{1,10}$"
             },
             "in": "query",
             "name": "limit",
-            "required": false
+            "required": false,
+            "description": "Page size, 1 to 100 (default 20)"
           },
           {
             "schema": {
-              "type": "integer",
-              "minimum": 0,
-              "maximum": 2147483647
+              "type": "string",
+              "pattern": "^\\d{1,10}$"
             },
             "in": "query",
             "name": "before",
-            "required": false
+            "required": false,
+            "description": "The `next` value of the previous page; omit for the first page"
           }
         ],
         "responses": {
@@ -1379,25 +1378,23 @@
         "parameters": [
           {
             "schema": {
-              "default": 25,
-              "type": "integer",
-              "minimum": 1,
-              "maximum": 100
+              "type": "string",
+              "pattern": "^\\d{1,10}$"
             },
             "in": "query",
             "name": "limit",
-            "required": false
+            "required": false,
+            "description": "Page size, 1 to 100 (default 25)"
           },
           {
             "schema": {
-              "default": -1,
-              "type": "integer",
-              "minimum": -1,
-              "maximum": 2147483647
+              "type": "string",
+              "pattern": "^\\d{1,10}$"
             },
             "in": "query",
             "name": "after",
-            "required": false
+            "required": false,
+            "description": "The `next` value of the previous page; omit for the first page"
           },
           {
             "schema": {
