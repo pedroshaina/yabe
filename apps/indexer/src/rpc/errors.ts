@@ -17,7 +17,9 @@ export class RpcHttpError extends Error {
     readonly method: string,
     readonly status: number,
   ) {
-    super(`${method}: HTTP ${status}${status === 401 ? " (check BITCOIN_RPC_USER/PASSWORD)" : ""}`);
+    super(
+      `${method}: HTTP ${status}${status === 401 ? " (check INDEXER_BITCOIN_RPC_USER/PASSWORD)" : ""}`,
+    );
   }
 }
 

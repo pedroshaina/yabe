@@ -7,8 +7,8 @@ process.stdout.write(
   [
     "# Paste into .env. The single quotes stop Compose from expanding the `$`.",
     `BITCOIN_RPC_AUTH='${createRpcAuth(user, password)}'`,
-    `BITCOIN_RPC_USER=${user}`,
-    `BITCOIN_RPC_PASSWORD=${password}`,
+    `INDEXER_BITCOIN_RPC_USER=${user}`,
+    `INDEXER_BITCOIN_RPC_PASSWORD=${password}`,
     "",
   ].join("\n"),
 );

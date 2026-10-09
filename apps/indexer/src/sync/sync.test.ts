@@ -162,7 +162,7 @@ describe("sync against regtest", () => {
     await expectMatchesNode(tip.height - 2);
   });
 
-  it("refuses a reorg deeper than MAX_REORG_DEPTH and deletes nothing", async () => {
+  it("refuses a reorg deeper than INDEXER_MAX_REORG_DEPTH and deletes nothing", async () => {
     await syncOnce(deps);
     const tip = (await tipOf())!;
 
