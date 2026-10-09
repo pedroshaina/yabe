@@ -94,6 +94,10 @@ describe("API skeleton", () => {
     expectProblem(await app.inject({ url: "/v1/blocks/%E0%A4%A" }), 400);
   });
 
+  it("an overlong path parameter is a 400 problem", async () => {
+    expectProblem(await app.inject({ url: `/v1/blocks/${"a".repeat(101)}` }), 400);
+  });
+
   it("an unexpected error is a 500 problem without internals", async () => {
     const response = await app.inject({ url: "/boom" });
     expectProblem(response, 500);
