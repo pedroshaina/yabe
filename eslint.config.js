@@ -15,6 +15,8 @@ export default defineConfig(
     "apps/web/src/lib/api/schema.d.ts",
     ".internal/",
     ".superpowers/",
+    "e2e/test-results/",
+    "e2e/playwright-report/",
   ]),
   js.configs.recommended,
   {

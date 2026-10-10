@@ -7,11 +7,16 @@ import styles from "./BlockSkeleton.module.css";
 /** The block page's shape in grey. `still` when loading failed. */
 export function BlockSkeleton({ still = false }: { still?: boolean }) {
   return (
-    <div aria-busy={!still} aria-label="Loading block">
+    <div aria-busy={!still}>
       <PageHeader
         icon={<BlockIcon />}
         label="Block"
-        title={<Skeleton width="150px" height={30} still={still} />}
+        title={
+          <>
+            <Skeleton width="150px" height={30} still={still} />
+            <span className="visually-hidden">{still ? "Block unavailable" : "Loading block"}</span>
+          </>
+        }
       />
       <div className={styles.hash}>
         <Skeleton width="88%" height={18} still={still} />

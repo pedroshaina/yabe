@@ -1,0 +1,18 @@
+{
+  "name": "@yabe/e2e",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "stack:up": "node stack/up.ts",
+    "stack:seed": "node stack/seed.ts",
+    "test": "playwright test",
+    "stack:down": "node stack/down.ts",
+    "e2e": "node stack/run.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0"
+  }
+}

@@ -14,11 +14,18 @@ export function TxSkeleton({ still = false }: { still?: boolean }) {
     </ol>
   );
   return (
-    <div aria-busy={!still} aria-label="Loading transaction">
+    <div aria-busy={!still}>
       <PageHeader
         icon={<TxIcon />}
         label="Transaction"
-        title={<Skeleton width="150px" height={30} still={still} />}
+        title={
+          <>
+            <Skeleton width="150px" height={30} still={still} />
+            <span className="visually-hidden">
+              {still ? "Transaction unavailable" : "Loading transaction"}
+            </span>
+          </>
+        }
       />
       <div className={styles.hash}>
         <Skeleton width="88%" height={18} still={still} />

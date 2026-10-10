@@ -120,6 +120,34 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  yabe-web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: yabe-web
+    environment:
+      WEB_API_URL: http://yabe-api:8080
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      yabe-api:
+        condition: service_healthy
+    healthcheck:
+      # Liveness only: /api/health doesn't call the API. No spaces, for Podman (see yabe-api).
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
 volumes:
   yabe-db-data:
   bitcoind-data:
