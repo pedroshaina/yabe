@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { DashedCube } from "@/components/ui/icons";
-import { formatInteger } from "@/lib/format";
 import { CURRENT_NETWORK } from "@/lib/networks";
 import { notFoundQuery } from "@/lib/search";
 import styles from "./NotFoundView.module.css";
@@ -12,7 +11,7 @@ import styles from "./NotFoundView.module.css";
  * The not-found page. A client component because not-found.tsx receives no params: what was
  * asked for is read from the URL (a /search query, or a /block or /tx id).
  */
-export function NotFoundView({ tipHeight }: { tipHeight: number | null }) {
+export function NotFoundView() {
   const { query, invalid } = notFoundQuery(usePathname(), useSearchParams().get("q"));
   return (
     <>
@@ -39,19 +38,7 @@ export function NotFoundView({ tipHeight }: { tipHeight: number | null }) {
             A transaction that was broadcast recently may still be waiting in the mempool. Y.A.B.E
             only shows confirmed transactions.
           </li>
-          <li>
-            {tipHeight === null ? (
-              "Block heights go from 0 to the latest block."
-            ) : (
-              <>
-                Block heights go from 0 to the latest block,{" "}
-                <Link href={`/block/${tipHeight}`} className="mono">
-                  {formatInteger(tipHeight)}
-                </Link>
-                .
-              </>
-            )}
-          </li>
+          <li>Block heights go from 0 to the latest indexed block.</li>
           <li>Block hashes and transaction ids are 64 hexadecimal characters.</li>
           <li>
             It may belong to another network. You&apos;re currently on{" "}
