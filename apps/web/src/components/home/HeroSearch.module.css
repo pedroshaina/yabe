@@ -1,0 +1,92 @@
+.hero {
+  padding: 32px 0 56px;
+  text-align: center;
+}
+
+.mark {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 20px;
+  color: var(--accent);
+  stroke-width: 1.2;
+}
+
+.title {
+  margin: 0 0 32px;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 400;
+  font-size: 28px;
+  letter-spacing: 0.02em;
+  text-wrap: balance;
+}
+
+.form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 6px 6px 20px;
+  border: 1px solid var(--field);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow:
+    0 1px 2px rgb(19 32 43 / 4%),
+    0 8px 24px rgb(19 32 43 / 5%);
+}
+
+.form:focus-within {
+  border-color: var(--accent);
+}
+
+.icon {
+  flex: none;
+  color: var(--muted);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+}
+
+.input::placeholder {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.button {
+  flex: none;
+  height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--ink);
+  color: var(--bg);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.hint {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--warn);
+  text-align: left;
+}
+
+@media (max-width: 640px) {
+  .hero {
+    padding: 16px 0 40px;
+  }
+
+  .button {
+    height: 40px;
+    padding: 0 16px;
+    font-size: 14px;
+  }
+}
