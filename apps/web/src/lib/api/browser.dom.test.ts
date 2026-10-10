@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { ApiError, fetchBlocks, fetchTip } from "@/lib/api/browser";
+import { ApiError, fetchBlockTransactions, fetchBlocks, fetchTip } from "@/lib/api/browser";
 
 const block = {
   height: 318442,
@@ -61,5 +61,22 @@ describe("browser API client", () => {
       vi.fn(async () => Promise.reject(new TypeError("Failed to fetch"))),
     );
     await expect(fetchTip()).rejects.toBeInstanceOf(TypeError);
+  });
+});
+
+describe("fetchBlockTransactions", () => {
+  it("fetches a page of a block's transactions with the cursor", async () => {
+    const urls = stubFetch(() => Response.json({ transactions: [], next: null }));
+    await fetchBlockTransactions({ hash: "a".repeat(64), after: 24, limit: 25 });
+    expect(urls).toEqual([
+      `${location.origin}/api/v1/blocks/${"a".repeat(64)}/transactions?limit=25&after=24`,
+    ]);
+  });
+
+  it("throws ApiError on an error answer", async () => {
+    stubFetch(() => Response.json({}, { status: 503 }));
+    await expect(
+      fetchBlockTransactions({ hash: "a".repeat(64), limit: 25 }),
+    ).rejects.toBeInstanceOf(ApiError);
   });
 });

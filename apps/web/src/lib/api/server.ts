@@ -19,10 +19,12 @@ export function createServerApi(
   });
 }
 
-let api: ReturnType<typeof createServerApi> | undefined;
+export type ServerApi = ReturnType<typeof createServerApi>;
+
+let api: ServerApi | undefined;
 
 /** The server's client for yabe-api at WEB_API_URL. Server-only. */
-export function serverApi(): ReturnType<typeof createServerApi> {
+export function serverApi(): ServerApi {
   api ??= createServerApi(getConfig().apiUrl);
   return api;
 }
