@@ -6,9 +6,9 @@ import { API_URL } from "../stack/urls.ts";
 
 const apiReady = () => waitFor("the API", async () => (await fetch(`${API_URL}/ready`)).ok);
 
-/** A container's stdout, line by line. */
-const stdout = (container: string) =>
-  engineOutput("logs", container)
+/** A container's stdout, line by line; `tail` keeps only the last lines. */
+const stdout = (container: string, tail?: number) =>
+  engineOutput("logs", ...(tail === undefined ? [] : ["--tail", String(tail)]), container)
     .split("\n")
     .filter((line) => line.trim() !== "");
 
@@ -29,7 +29,8 @@ test("the API answers /health and /ready", async ({ request }) => {
 
 test("the API and the indexer log JSON lines on stdout", () => {
   for (const container of ["yabe-e2e-api", "yabe-e2e-indexer"]) {
-    const lines = stdout(container);
+    // The recent lines: a kept-up stack's whole history can be megabytes of /ready requests.
+    const lines = stdout(container, 2000);
     expect(lines.length, container).toBeGreaterThan(0);
     for (const line of lines) {
       const entry = JSON.parse(line) as unknown;
@@ -46,9 +47,14 @@ test("the indexer and the API stop cleanly on SIGTERM", async () => {
     ["yabe-indexer", "yabe-e2e-indexer", "stopping after the current block"],
     ["yabe-api", "yabe-e2e-api", "shutting down"],
   ] as const) {
+    // Only lines written by this stop count: earlier stops (the outage spec, earlier runs)
+    // already logged the same message.
+    const before = stdout(container).length;
     compose("stop", service);
     expect(exitCode(container), `${service} exit code`).toBe(0);
-    const messages = stdout(container).map((line) => (JSON.parse(line) as { msg?: string }).msg);
+    const messages = stdout(container)
+      .slice(before)
+      .map((line) => (JSON.parse(line) as { msg?: string }).msg);
     expect(messages, `${service} shutdown log`).toContain(message);
     compose("start", service);
   }

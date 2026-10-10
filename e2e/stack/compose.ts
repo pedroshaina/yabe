@@ -51,5 +51,10 @@ export async function waitFor(
 
 /** The container engine itself (docker or podman), e.g. inspect or logs; returns stdout. */
 export function engineOutput(...args: string[]): string {
-  return execFileSync(ENGINE, args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  // Container logs outgrow the default 1 MiB buffer on a long-lived stack (ENOBUFS).
+  return execFileSync(ENGINE, args, {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    maxBuffer: 64 * 1024 * 1024,
+  });
 }
