@@ -8,6 +8,12 @@ vi.mock("next/navigation", () => ({
   usePathname: () => nav.pathname,
   useRouter: () => ({ push: nav.push }),
 }));
+const transition = vi.hoisted(() => ({ pending: false }));
+// Next keeps a transition pending until the search page answers; tests set that state directly.
+vi.mock("react", async (importOriginal) => {
+  const react = await importOriginal<typeof import("react")>();
+  return { ...react, useTransition: () => [transition.pending, (fn: () => void) => fn()] };
+});
 
 const HINT = "Enter a block height, block hash or transaction id";
 
@@ -15,6 +21,7 @@ describe("TopBarSearch", () => {
   beforeEach(() => {
     nav.pathname = "/block/1";
     nav.push.mockClear();
+    transition.pending = false;
   });
 
   it("isn't shown on the home page, which has the hero search", () => {
@@ -50,5 +57,19 @@ describe("TopBarSearch", () => {
     rerender(<TopBarSearch />);
     expect(screen.getByRole("searchbox")).toHaveValue("");
     expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("says Searching… while the search runs, and ignores another submit", async () => {
+    transition.pending = true;
+    const user = userEvent.setup();
+    render(<TopBarSearch />);
+    expect(screen.getByRole("status")).toHaveTextContent("Searching…");
+    await user.type(screen.getByRole("searchbox"), "325700{Enter}");
+    expect(nav.push).not.toHaveBeenCalled();
+  });
+
+  it("says nothing while idle", () => {
+    render(<TopBarSearch />);
+    expect(screen.getByRole("status")).toHaveTextContent("");
   });
 });

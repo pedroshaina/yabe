@@ -1,5 +1,5 @@
 import { useRouter } from "next/navigation";
-import { useId, useState, type ChangeEvent, type FormEvent } from "react";
+import { useId, useState, useTransition, type ChangeEvent, type FormEvent } from "react";
 import { classifyQuery, searchHref } from "@/lib/search";
 
 export const SEARCH_HINT = "Enter a block height, block hash or transaction id";
@@ -10,20 +10,24 @@ export function useSearchForm() {
   const hintId = useId();
   const [value, setValue] = useState("");
   const [invalid, setInvalid] = useState(false);
+  // Pending until the search page answers (/search has no loading skeleton, so nothing else shows).
+  const [pending, startTransition] = useTransition();
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (pending) return;
     const query = classifyQuery(value);
     if (query.kind === "invalid") {
       setInvalid(true);
       return;
     }
-    router.push(searchHref(query.value));
+    startTransition(() => router.push(searchHref(query.value)));
   }
 
   return {
     hintId,
     invalid,
+    pending,
     onSubmit,
     inputProps: {
       type: "search",

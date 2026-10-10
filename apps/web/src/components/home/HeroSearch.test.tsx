@@ -5,11 +5,20 @@ import { HeroSearch } from "@/components/home/HeroSearch";
 
 const { push } = vi.hoisted(() => ({ push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+const transition = vi.hoisted(() => ({ pending: false }));
+// Next keeps a transition pending until the search page answers; tests set that state directly.
+vi.mock("react", async (importOriginal) => {
+  const react = await importOriginal<typeof import("react")>();
+  return { ...react, useTransition: () => [transition.pending, (fn: () => void) => fn()] };
+});
 
 const HINT = "Enter a block height, block hash or transaction id";
 
 describe("HeroSearch", () => {
-  beforeEach(() => push.mockClear());
+  beforeEach(() => {
+    push.mockClear();
+    transition.pending = false;
+  });
 
   it("has a labelled search field and a Search button", () => {
     render(<HeroSearch />);
@@ -60,5 +69,18 @@ describe("HeroSearch", () => {
     await user.type(input, "d");
     expect(screen.queryByText(HINT)).toBeNull();
     expect(input).not.toHaveAttribute("aria-invalid");
+  });
+
+  it("says Searching… while the search runs, and ignores another submit", async () => {
+    transition.pending = true;
+    const user = userEvent.setup();
+    render(<HeroSearch />);
+    expect(screen.getByRole("button", { name: "Searching…" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("Searching…");
+    await user.type(screen.getByRole("searchbox"), "325700{Enter}");
+    expect(push).not.toHaveBeenCalled();
   });
 });

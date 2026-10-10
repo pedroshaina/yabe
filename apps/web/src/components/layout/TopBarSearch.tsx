@@ -14,10 +14,16 @@ export function TopBarSearch() {
 }
 
 function TopBarSearchForm() {
-  const { hintId, invalid, onSubmit, inputProps } = useSearchForm();
+  const { hintId, invalid, pending, onSubmit, inputProps } = useSearchForm();
   return (
     <div className={styles.wrap}>
-      <form className={styles.form} role="search" onSubmit={onSubmit} noValidate>
+      <form
+        className={styles.form}
+        role="search"
+        aria-busy={pending || undefined}
+        onSubmit={onSubmit}
+        noValidate
+      >
         <SearchIcon className={styles.icon} />
         <label htmlFor="top-search" className="visually-hidden">
           Search
@@ -34,6 +40,13 @@ function TopBarSearchForm() {
           {SEARCH_HINT}
         </p>
       )}
+      {/* No button to relabel here, so "Searching…" shows in the hint's popover spot. */}
+      <p
+        role="status"
+        className={pending ? `${styles.hint} ${styles.searching}` : "visually-hidden"}
+      >
+        {pending ? "Searching…" : ""}
+      </p>
     </div>
   );
 }

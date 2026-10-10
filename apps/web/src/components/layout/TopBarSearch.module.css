@@ -39,6 +39,11 @@
   font-size: 16px;
 }
 
+/* The form's accent border shows focus; no second ring inside it. */
+.input:focus-visible {
+  outline: none;
+}
+
 .input::placeholder {
   font-size: 14px;
   color: var(--muted);
@@ -59,6 +64,10 @@
   box-shadow: var(--shadow);
   font-size: 13px;
   color: var(--warn);
+}
+
+.searching {
+  color: var(--muted);
 }
 
 @media (max-width: 640px) {
