@@ -66,16 +66,21 @@ jobs:
       - name: Build the migration image
         run: docker build -f packages/db/Dockerfile -t yabe-db-migration .
 
+      - name: Build the web image
+        run: docker build -f apps/web/Dockerfile -t yabe-web .
+
       - name: Images run as node, carry no .env, and resolve their modules
         run: |
           for app in indexer api; do
             docker run --rm --entrypoint sh "yabe-$app" -c \
               'test "$(id -un)" = node && test ! -e /app/.env && node --input-type=module -e "await import(\"@yabe/db\"); await import(\"/app/dist/config.js\")"'
           done
+          docker run --rm --entrypoint sh yabe-web -c \
+            'test "$(id -un)" = node && test ! -e /app/.env && test -f /app/apps/web/server.js'
 
       - name: Images carry no build tooling (Prisma CLI, TypeScript)
         run: |
-          for app in indexer api; do
+          for app in indexer api web; do
             docker run --rm --entrypoint sh "yabe-$app" -c \
               '! ls /app/node_modules/.pnpm | grep -E "^(prisma|typescript)@"'
           done

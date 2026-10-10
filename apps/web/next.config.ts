@@ -9,6 +9,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // A self-contained server (server.js plus only the node_modules it uses) for the image.
+  output: "standalone",
   // Don't write AGENTS.md / CLAUDE.md into the app on `next dev`.
   agentRules: false,
   reactStrictMode: true,
