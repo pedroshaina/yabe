@@ -1,3 +1,4 @@
+import "server-only";
 import createClient from "openapi-fetch";
 import { getConfig } from "@/config";
 import { API_TIMEOUT_MS } from "./constants";
