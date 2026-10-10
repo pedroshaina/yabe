@@ -55,6 +55,13 @@
   color: var(--muted);
 }
 
+/* WCAG 2.5.8: "Spent in …" is a link on its own line, so it needs a 24px target. */
+.meta a {
+  display: inline-block;
+  min-height: 24px;
+  line-height: 24px;
+}
+
 .connector {
   display: flex;
   align-items: stretch;
