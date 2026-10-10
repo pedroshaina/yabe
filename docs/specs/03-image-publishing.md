@@ -21,7 +21,7 @@ Until now, CI built the images but published them nowhere.
 
 ## Out of scope for now
 
-- Prometheus `/metrics` on the indexer and the API, and a configurable path prefix for the API docs. Both are later items of the same contract.
+- Prometheus `/metrics` on the indexer and the API, a later item of the same contract. The other later item, a configurable path prefix for the API docs, has since been added as `API_PUBLIC_PREFIX`.
 - Image signing, SBOMs and vulnerability scanning, and automatic promotion in the cluster's repository.
 - Multi-architecture images.
 
