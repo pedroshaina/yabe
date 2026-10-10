@@ -4,6 +4,8 @@ on:
   pull_request:
   push:
     branches: [develop]
+  # The release workflow runs it on master before publishing.
+  workflow_call:
 
 jobs:
   check:
