@@ -214,3 +214,68 @@ export function ArrowUpIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+/** The block page's header icon: the tinted cube. */
+export function BlockIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      width="44"
+      height="44"
+      viewBox="0 0 48 48"
+      strokeWidth="1.6"
+      data-tinted
+      {...strokeIcon}
+    >
+      <path d={CUBE} />
+    </svg>
+  );
+}
+
+/** The transaction page's header icon: two opposite arrows in a tinted circle. */
+export function TxIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      width="44"
+      height="44"
+      viewBox="0 0 48 48"
+      strokeWidth="1.6"
+      {...strokeIcon}
+    >
+      <circle cx="24" cy="24" r="20" data-tinted />
+      <path d="M14 19H34M29 14L34 19L29 24M34 29H14M19 24L14 29L19 34" />
+    </svg>
+  );
+}
+
+export function CopyIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      strokeWidth="2"
+      {...strokeIcon}
+    >
+      <rect x="8" y="8" width="12" height="12" rx="2" />
+      <path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" />
+    </svg>
+  );
+}
+
+export function CheckIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={className}
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      strokeWidth="2.2"
+      {...strokeIcon}
+    >
+      <path d="M5 12.5l4.5 4.5L19 7.5" />
+    </svg>
+  );
+}
