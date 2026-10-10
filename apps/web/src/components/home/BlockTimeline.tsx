@@ -8,6 +8,8 @@ import { fetchBlocks } from "@/lib/api/browser";
 import type { BlockSummary } from "@/lib/api/types";
 import { BlockCard } from "./BlockCard";
 import { BlockCardSkeleton } from "./BlockCardSkeleton";
+import { NewBlocksPill } from "./NewBlocksPill";
+import { useChainTip } from "./useChainTip";
 import styles from "./BlockTimeline.module.css";
 import timeline from "./Timeline.module.css";
 
@@ -29,7 +31,12 @@ export function BlockTimeline({ initialBlocks, initialNext, serverNow }: Props) 
   const [blocks, setBlocks] = useState(initialBlocks);
   const [next, setNext] = useState(initialNext);
   const [loadingOlder, setLoadingOlder] = useState(false);
+  const [loadingNewer, setLoadingNewer] = useState(false);
   const busy = useRef(false);
+  const busyNewer = useRef(false);
+  const tip = useChainTip();
+  const newest = blocks[0]?.height ?? -1;
+  const newCount = tip !== null && tip > newest ? tip - newest : 0;
 
   async function loadOlder(): Promise<void> {
     if (busy.current || next === null) return;
@@ -47,18 +54,63 @@ export function BlockTimeline({ initialBlocks, initialNext, serverNow }: Props) 
     }
   }
 
+  async function loadNewer(): Promise<void> {
+    if (busyNewer.current) return;
+    busyNewer.current = true;
+    setLoadingNewer(true);
+    try {
+      const page = await fetchBlocks({ limit: PAGE_SIZE });
+      const shownNewest = blocks[0]?.height ?? -1;
+      const oldestFetched = page.blocks.at(-1)?.height;
+      if (oldestFetched !== undefined && oldestFetched > shownNewest + 1) {
+        // More arrived than one page holds: a gap would open, so start over from the latest page.
+        setBlocks(page.blocks);
+        setNext(page.next);
+      } else {
+        setBlocks((current) => [
+          ...page.blocks.filter((b) => b.height > (current[0]?.height ?? -1)),
+          ...current,
+        ]);
+      }
+    } catch {
+      notifyRetryable("Couldn't load new blocks", () => void loadNewer());
+    } finally {
+      busyNewer.current = false;
+      setLoadingNewer(false);
+    }
+  }
+
+  const pill = newCount > 0 && !loadingNewer && (
+    <NewBlocksPill count={newCount} onClick={() => void loadNewer()} />
+  );
+
   if (blocks.length === 0) {
     return (
-      <EmptyState title="No blocks indexed yet">
-        The indexer is still catching up with the node. Blocks will appear here as soon as they are
-        indexed.
-      </EmptyState>
+      <>
+        {pill}
+        {loadingNewer ? (
+          <ol className={timeline.list} aria-busy="true">
+            <BlockCardSkeleton />
+          </ol>
+        ) : (
+          <EmptyState title="No blocks indexed yet">
+            The indexer is still catching up with the node. Blocks will appear here as soon as they
+            are indexed.
+          </EmptyState>
+        )}
+      </>
     );
   }
 
   return (
     <>
-      <ol className={timeline.list} aria-label="Latest blocks" aria-busy={loadingOlder}>
+      {pill}
+      <ol
+        className={timeline.list}
+        aria-label="Latest blocks"
+        aria-busy={loadingOlder || loadingNewer}
+      >
+        {loadingNewer && <BlockCardSkeleton key="newer" />}
         {blocks.map((block, index) => (
           <BlockCard key={block.height} block={block} newest={index === 0} serverNow={serverNow} />
         ))}

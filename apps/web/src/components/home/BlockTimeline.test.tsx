@@ -1,7 +1,8 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BlockTimeline } from "@/components/home/BlockTimeline";
+import { POLL_INTERVAL_MS } from "@/components/home/useChainTip";
 import type { BlockSummary } from "@/lib/api/types";
 
 const notifyMocks = vi.hoisted(() => ({
@@ -156,5 +157,134 @@ describe("BlockTimeline", () => {
     expect(
       within(screen.getByRole("list", { name: "Latest blocks" })).getAllByRole("link"),
     ).toHaveLength(1);
+  });
+});
+
+function setVisibility(state: "visible" | "hidden") {
+  Object.defineProperty(document, "visibilityState", { configurable: true, get: () => state });
+  document.dispatchEvent(new Event("visibilitychange"));
+}
+
+describe("BlockTimeline new blocks", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    setVisibility("visible");
+    notifyRetryable.mockClear();
+    notifyMocks.notifyConnectionLost.mockClear();
+    notifyMocks.dismissConnectionLost.mockClear();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function tick() {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    });
+  }
+
+  it("offers new blocks when the tip moves, and adds them on click", async () => {
+    let tip = 318442;
+    stubApi((url) =>
+      url.pathname === "/api/v1/status"
+        ? Response.json({ tip: { height: tip, hash: "a".repeat(64), time: 1 } })
+        : Response.json({ blocks: range(318444, 10), next: 318434 }),
+    );
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<BlockTimeline initialBlocks={range(318442, 3)} initialNext={318440} serverNow={NOW} />);
+
+    await tick();
+    expect(screen.queryByRole("button", { name: /new block/ })).toBeNull();
+
+    tip = 318444;
+    await tick();
+    await user.click(screen.getByRole("button", { name: "2 new blocks" }));
+
+    await waitFor(() => expect(heights()).toHaveLength(5));
+    expect(heights().slice(0, 3)).toEqual(["/block/318444", "/block/318443", "/block/318442"]);
+    expect(screen.queryByRole("button", { name: /new block/ })).toBeNull();
+  });
+
+  it("says 1 new block in the singular", async () => {
+    stubApi(() => Response.json({ tip: { height: 318443, hash: "a".repeat(64), time: 1 } }));
+    render(<BlockTimeline initialBlocks={range(318442, 3)} initialNext={318440} serverNow={NOW} />);
+    await tick();
+    expect(screen.getByRole("button", { name: "1 new block" })).toBeInTheDocument();
+  });
+
+  it("resets to the latest page when more blocks arrived than one page holds", async () => {
+    stubApi((url) =>
+      url.pathname === "/api/v1/status"
+        ? Response.json({ tip: { height: 318472, hash: "a".repeat(64), time: 1 } })
+        : Response.json({ blocks: range(318472, 10), next: 318462 }),
+    );
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<BlockTimeline initialBlocks={range(318442, 3)} initialNext={318440} serverNow={NOW} />);
+    await tick();
+    await user.click(screen.getByRole("button", { name: "30 new blocks" }));
+    await waitFor(() => expect(heights()[0]).toBe("/block/318472"));
+    expect(heights()).toHaveLength(10);
+    expect(heights()).not.toContain("/block/318442");
+  });
+
+  it("does not poll while the tab is hidden, and checks once on return", async () => {
+    const calls = stubApi(() => Response.json({ tip: null }));
+    render(<BlockTimeline initialBlocks={range(318442, 1)} initialNext={null} serverNow={NOW} />);
+    setVisibility("hidden");
+    await tick();
+    await tick();
+    expect(calls.filter((u) => u.pathname === "/api/v1/status")).toHaveLength(0);
+    await act(async () => {
+      setVisibility("visible");
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(calls.filter((u) => u.pathname === "/api/v1/status")).toHaveLength(1);
+  });
+
+  it("warns once after 3 failed polls and clears the warning on success", async () => {
+    let down = true;
+    stubApi(() => (down ? Response.json({}, { status: 503 }) : Response.json({ tip: null })));
+    render(<BlockTimeline initialBlocks={range(318442, 1)} initialNext={null} serverNow={NOW} />);
+    await tick();
+    await tick();
+    expect(notifyMocks.notifyConnectionLost).not.toHaveBeenCalled();
+    await tick();
+    await tick();
+    expect(notifyMocks.notifyConnectionLost).toHaveBeenCalledOnce();
+    down = false;
+    await tick();
+    expect(notifyMocks.dismissConnectionLost).toHaveBeenCalledOnce();
+  });
+
+  it("fills the empty state when the first blocks are indexed", async () => {
+    stubApi((url) =>
+      url.pathname === "/api/v1/status"
+        ? Response.json({ tip: { height: 1, hash: "a".repeat(64), time: 1 } })
+        : Response.json({ blocks: range(1, 2), next: null }),
+    );
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<BlockTimeline initialBlocks={[]} initialNext={null} serverNow={NOW} />);
+    await tick();
+    await user.click(screen.getByRole("button", { name: "2 new blocks" }));
+    await waitFor(() => expect(heights()).toEqual(["/block/1", "/block/0"]));
+  });
+
+  it("offers Retry when fetching the new blocks fails", async () => {
+    stubApi((url) =>
+      url.pathname === "/api/v1/status"
+        ? Response.json({ tip: { height: 318443, hash: "a".repeat(64), time: 1 } })
+        : Response.json({}, { status: 503 }),
+    );
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<BlockTimeline initialBlocks={range(318442, 3)} initialNext={318440} serverNow={NOW} />);
+    await tick();
+    await user.click(screen.getByRole("button", { name: "1 new block" }));
+    await waitFor(() =>
+      expect(notifyRetryable).toHaveBeenCalledWith(
+        "Couldn't load new blocks",
+        expect.any(Function),
+      ),
+    );
+    expect(screen.getByRole("button", { name: "1 new block" })).toBeInTheDocument();
   });
 });

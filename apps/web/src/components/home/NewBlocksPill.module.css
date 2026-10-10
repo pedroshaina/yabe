@@ -1,0 +1,21 @@
+.wrap {
+  display: flex;
+  justify-content: center;
+  margin: -8px 0 16px;
+}
+
+.pill {
+  height: 40px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--tip);
+  color: var(--link);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
