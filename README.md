@@ -2,6 +2,8 @@
 
 # yabe
 
+[https://yabe.pdrlabs.com.br](https://yabe.pdrlabs.com.br)
+
 **Yet Another Block Explorer**: a Bitcoin indexer, a read-only REST API and a web frontend, written in TypeScript. The indexer copies the chain from a Bitcoin Core node into Postgres and keeps it correct across chain reorganisations. The API serves blocks, transactions and search, described by a committed OpenAPI contract. The frontend is built on that contract.
 
 It runs against **signet** with one command and is tested against **regtest**.
