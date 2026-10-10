@@ -1,15 +1,15 @@
-# Regtest overlay for scripts/smoke.sh, which runs it as Compose project "yabe-smoke".
-# Its own container names, volumes and API port keep it away from the signet stack.
+# Regtest overlay for the end-to-end suite (e2e/), run as Compose project "yabe-e2e".
+# Its own container names, volumes and ports keep it away from the signet stack.
 services:
   yabe-db:
-    container_name: yabe-smoke-db
+    container_name: yabe-e2e-db
     ports: !reset []
 
   yabe-db-migration:
-    container_name: yabe-smoke-db-migration
+    container_name: yabe-e2e-db-migration
 
   bitcoind:
-    container_name: yabe-smoke-bitcoind
+    container_name: yabe-e2e-bitcoind
     command: !override
       - -regtest
       - -server
@@ -34,12 +34,17 @@ services:
       start_period: 5s
 
   yabe-indexer:
-    container_name: yabe-smoke-indexer
+    container_name: yabe-e2e-indexer
     environment:
       INDEXER_BITCOIN_NETWORK: regtest
       INDEXER_POLL_INTERVAL_MS: "1000"
 
   yabe-api:
-    container_name: yabe-smoke-api
+    container_name: yabe-e2e-api
     ports: !override
-      - "127.0.0.1:${SMOKE_API_PORT:-18080}:8080"
+      - "127.0.0.1:${E2E_API_PORT:-18080}:8080"
+
+  yabe-web:
+    container_name: yabe-e2e-web
+    ports: !override
+      - "127.0.0.1:${E2E_WEB_PORT:-13000}:3000"

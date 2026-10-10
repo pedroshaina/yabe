@@ -19,7 +19,13 @@
     "dev:api": "pnpm --filter @yabe/api dev",
     "openapi": "pnpm --filter @yabe/api openapi",
     "dev:web": "pnpm --filter @yabe/web dev",
-    "web:types": "pnpm --filter @yabe/web types"
+    "web:types": "pnpm --filter @yabe/web types",
+    "e2e": "pnpm --filter @yabe/e2e e2e",
+    "e2e:up": "pnpm --filter @yabe/e2e stack:up",
+    "e2e:seed": "pnpm --filter @yabe/e2e stack:seed",
+    "e2e:test": "pnpm --filter @yabe/e2e test",
+    "e2e:down": "pnpm --filter @yabe/e2e stack:down",
+    "e2e:install": "pnpm --filter @yabe/e2e exec playwright install chromium"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
