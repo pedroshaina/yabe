@@ -16,6 +16,7 @@ RUN pnpm --filter @yabe/web build
 
 FROM node:24-slim
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HOSTNAME=0.0.0.0 PORT=3000
+LABEL org.opencontainers.image.source="https://github.com/pedroshaina/yabe"
 WORKDIR /app
 # The standalone server and the node_modules it traced; static assets go beside it.
 COPY --from=build /repo/apps/web/.next/standalone ./

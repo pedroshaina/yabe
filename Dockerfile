@@ -23,6 +23,7 @@ RUN test -n "$APP" \
 
 FROM node:24-slim
 ENV NODE_ENV=production
+LABEL org.opencontainers.image.source="https://github.com/pedroshaina/yabe"
 WORKDIR /app
 COPY --from=build /out ./
 USER node
