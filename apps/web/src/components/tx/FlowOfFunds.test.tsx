@@ -45,4 +45,16 @@ describe("FlowOfFunds", () => {
     expect(screen.getByText(/Coinbase ·/)).toHaveTextContent("Coinbase · 141 vB");
     expect(document.body.textContent).not.toMatch(/null|NaN|undefined/);
   });
+
+  it("makes long addresses expandable and leaves script types as text", () => {
+    const long = "tb1pzczwmt4kenu8j0avnhpyefp3gph32w2syuym8p8qxs5ulxudus3sqmsj75";
+    render(
+      <FlowOfFunds
+        tx={{ ...tx, outputs: [{ ...tx.outputs[0]!, address: long }, tx.outputs[1]!] }}
+      />,
+    );
+    const to = screen.getByRole("region", { name: /To/ });
+    expect(within(to).getByRole("button", { name: long })).toBeInTheDocument();
+    expect(within(to).getByText("nulldata").closest("button")).toBeNull();
+  });
 });

@@ -10,6 +10,7 @@ import {
   formatUtc,
   formatVersion,
   formatWeight,
+  middleEllipsis,
   plural,
   shortHash,
 } from "@/lib/format";
@@ -151,5 +152,17 @@ describe("formatSbtcOrDash", () => {
     expect(formatSbtcOrDash(1410)).toBe("0.00001410");
     expect(formatSbtcOrDash(0)).toBe("0.00000000");
     expect(formatSbtcOrDash(null)).toBe("—");
+  });
+});
+
+describe("middleEllipsis", () => {
+  it.each([
+    ["tb1pzczwmt4kenu8j0avnhpyefp3gph32w2syuym8p8qxs5ulxudus3sqmsj75", "tb1pzczwmt…qmsj75"],
+    ["tb1qxc9rhgpdjcp42nmhg6lepe7pp5g86tx25vlv8h", "tb1qxc9rhg…5vlv8h"],
+    ["12345678901234567", "12345678901234567"],
+    ["123456789012345678", "1234567890…345678"],
+    ["tb1qinputone", "tb1qinputone"],
+  ])("%s → %s", (value, expected) => {
+    expect(middleEllipsis(value)).toBe(expected);
   });
 });
