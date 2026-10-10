@@ -12,6 +12,8 @@ const nextConfig: NextConfig = {
   // Don't write AGENTS.md / CLAUDE.md into the app on `next dev`.
   agentRules: false,
   reactStrictMode: true,
+  // The stack publishes everything on 127.0.0.1; let `next dev` serve hot reload there too.
+  allowedDevOrigins: ["127.0.0.1"],
   headers() {
     return Promise.resolve([{ source: "/:path*", headers: securityHeaders }]);
   },
