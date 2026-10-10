@@ -19,3 +19,8 @@
   font-weight: 600;
   cursor: pointer;
 }
+
+.pill[aria-disabled] {
+  cursor: progress;
+  opacity: 0.6;
+}

@@ -28,11 +28,15 @@ describe("ErrorToast", () => {
       }),
     );
     const options = toastError.mock.calls[0]![1] as {
-      action: { label: string; onClick: () => void };
+      action: { label: string; onClick: (event: { preventDefault: () => void }) => void };
     };
     expect(options.action.label).toBe("Retry");
-    options.action.onClick();
+    const preventDefault = vi.fn();
+    options.action.onClick({ preventDefault });
     expect(refresh).toHaveBeenCalledOnce();
+    // Sonner closes a toast after its action unless the click is default-prevented; the toast
+    // must stay up in case the API is still down after the refresh.
+    expect(preventDefault).toHaveBeenCalledOnce();
   });
 
   it("dismisses its toast when it unmounts (the data came back)", () => {

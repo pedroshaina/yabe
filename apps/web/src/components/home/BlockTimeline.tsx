@@ -28,7 +28,14 @@ function appendOlder(blocks: BlockSummary[], page: BlockSummary[]): BlockSummary
 
 export function BlockTimeline({ initialBlocks, initialNext, serverNow }: Props) {
   const [blocks, setBlocks] = useState(initialBlocks);
-  const [next, setNext] = useState(initialNext);
+  const [next, setNextState] = useState(initialNext);
+  // The cursor as of now, readable from async callbacks: a page requested with an older cursor
+  // (before a reset, or from a stale Retry) must not be appended.
+  const nextRef = useRef(initialNext);
+  function setNext(value: number | null) {
+    nextRef.current = value;
+    setNextState(value);
+  }
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [loadingNewer, setLoadingNewer] = useState(false);
   const busy = useRef(false);
@@ -38,11 +45,13 @@ export function BlockTimeline({ initialBlocks, initialNext, serverNow }: Props) 
   const newCount = tip !== null && tip > newest ? tip - newest : 0;
 
   async function loadOlder(): Promise<void> {
-    if (busy.current || next === null) return;
+    const cursor = nextRef.current;
+    if (busy.current || cursor === null) return;
     busy.current = true;
     setLoadingOlder(true);
     try {
-      const page = await fetchBlocks({ limit: PAGE_SIZE, before: next });
+      const page = await fetchBlocks({ limit: PAGE_SIZE, before: cursor });
+      if (nextRef.current !== cursor) return;
       setBlocks((current) => appendOlder(current, page.blocks));
       setNext(page.next);
     } catch {
@@ -79,8 +88,8 @@ export function BlockTimeline({ initialBlocks, initialNext, serverNow }: Props) 
     }
   }
 
-  const pill = newCount > 0 && !loadingNewer && (
-    <NewBlocksPill count={newCount} onClick={() => void loadNewer()} />
+  const pill = newCount > 0 && (
+    <NewBlocksPill count={newCount} busy={loadingNewer} onClick={() => void loadNewer()} />
   );
 
   if (blocks.length === 0) {
@@ -116,9 +125,14 @@ export function BlockTimeline({ initialBlocks, initialNext, serverNow }: Props) 
         {loadingOlder &&
           Array.from({ length: 3 }, (_, i) => <BlockCardSkeleton key={`older-${i}`} />)}
       </ol>
-      {next !== null && !loadingOlder && (
+      {next !== null && (
         <div className={styles.more}>
-          <button type="button" className={styles.moreButton} onClick={() => void loadOlder()}>
+          <button
+            type="button"
+            className={styles.moreButton}
+            aria-disabled={loadingOlder || undefined}
+            onClick={() => void loadOlder()}
+          >
             Load older blocks
             <ChevronDownIcon />
           </button>

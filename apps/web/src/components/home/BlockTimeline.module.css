@@ -16,3 +16,8 @@
   font-weight: 500;
   cursor: pointer;
 }
+
+.moreButton[aria-disabled] {
+  cursor: progress;
+  opacity: 0.6;
+}

@@ -20,7 +20,15 @@ export function ErrorToast({
       id,
       description,
       duration: Infinity,
-      action: { label: "Retry", onClick: () => router.refresh() },
+      action: {
+        label: "Retry",
+        onClick: (event) => {
+          // Keep the toast up: if the API is still down after the refresh, this component stays
+          // mounted with the same props and wouldn't raise it again.
+          event.preventDefault();
+          router.refresh();
+        },
+      },
     });
     return () => {
       toast.dismiss(id);

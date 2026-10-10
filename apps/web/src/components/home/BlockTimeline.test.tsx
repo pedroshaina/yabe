@@ -99,16 +99,19 @@ describe("BlockTimeline", () => {
     expect(new Set(heights()).size).toBe(5);
   });
 
-  it("sends one request when clicked twice quickly", async () => {
-    const calls = stubApi((url) =>
-      url.pathname === "/api/v1/status"
-        ? Response.json({ tip: null })
-        : Response.json({ blocks: range(318439, 2), next: 318438 }),
-    );
+  it("sends one request when clicked twice while loading", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const calls = stubApi(async (url) => {
+      if (url.pathname === "/api/v1/status") return Response.json({ tip: null });
+      await gate;
+      return Response.json({ blocks: range(318439, 2), next: 318438 });
+    });
     const user = userEvent.setup();
     render(<BlockTimeline initialBlocks={range(318442, 3)} initialNext={318440} serverNow={NOW} />);
     const button = screen.getByRole("button", { name: "Load older blocks" });
     await user.dblClick(button);
+    release();
     await waitFor(() => expect(heights()).toHaveLength(5));
     expect(blockCalls(calls)).toHaveLength(1);
   });
@@ -286,5 +289,103 @@ describe("BlockTimeline new blocks", () => {
       ),
     );
     expect(screen.getByRole("button", { name: "1 new block" })).toBeInTheDocument();
+  });
+});
+
+describe("BlockTimeline review fixes", () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    setVisibility("visible");
+    notifyRetryable.mockClear();
+    notifyMocks.notifyConnectionLost.mockClear();
+    notifyMocks.dismissConnectionLost.mockClear();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  async function tick() {
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(POLL_INTERVAL_MS);
+    });
+  }
+
+  it("drops an older page that arrives after a reset, and continues from the reset's cursor", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const calls = stubApi(async (url) => {
+      if (url.pathname === "/api/v1/status") {
+        return Response.json({ tip: { height: 318472, hash: "a".repeat(64), time: 1 } });
+      }
+      if (url.searchParams.get("before") === "318433") {
+        await gate;
+        return Response.json({ blocks: range(318432, 10), next: 318422 });
+      }
+      if (url.searchParams.has("before")) {
+        return Response.json({ blocks: range(318461, 10), next: 318451 });
+      }
+      return Response.json({ blocks: range(318472, 10), next: 318462 });
+    });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(
+      <BlockTimeline initialBlocks={range(318442, 10)} initialNext={318433} serverNow={NOW} />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Load older blocks" }));
+    await tick();
+    await user.click(screen.getByRole("button", { name: "30 new blocks" }));
+    await waitFor(() => expect(heights()[0]).toBe("/block/318472"));
+
+    await act(async () => {
+      release();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(heights()).toEqual(range(318472, 10).map((b) => `/block/${b.height}`));
+
+    await user.click(screen.getByRole("button", { name: "Load older blocks" }));
+    await waitFor(() => expect(heights()).toHaveLength(20));
+    expect(blockCalls(calls).at(-1)?.searchParams.get("before")).toBe("318462");
+  });
+
+  it("keeps keyboard focus on Load older blocks while and after it loads", async () => {
+    stubApi((url) =>
+      url.pathname === "/api/v1/status"
+        ? Response.json({ tip: null })
+        : Response.json({ blocks: range(318439, 2), next: 318438 }),
+    );
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<BlockTimeline initialBlocks={range(318442, 3)} initialNext={318440} serverNow={NOW} />);
+    const button = screen.getByRole("button", { name: "Load older blocks" });
+    button.focus();
+    await user.keyboard("{Enter}");
+    await waitFor(() => expect(heights()).toHaveLength(5));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Load older blocks" }));
+  });
+
+  it("sends one request when the pill is clicked twice quickly", async () => {
+    const calls = stubApi((url) =>
+      url.pathname === "/api/v1/status"
+        ? Response.json({ tip: { height: 318443, hash: "a".repeat(64), time: 1 } })
+        : Response.json({ blocks: range(318443, 10), next: 318433 }),
+    );
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    render(<BlockTimeline initialBlocks={range(318442, 3)} initialNext={318440} serverNow={NOW} />);
+    await tick();
+    await user.dblClick(screen.getByRole("button", { name: "1 new block" }));
+    await waitFor(() => expect(heights()[0]).toBe("/block/318443"));
+    expect(blockCalls(calls)).toHaveLength(1);
+  });
+
+  it("clears the lost-connection warning when the timeline goes away", async () => {
+    stubApi(() => Response.json({}, { status: 503 }));
+    const { unmount } = render(
+      <BlockTimeline initialBlocks={range(318442, 1)} initialNext={null} serverNow={NOW} />,
+    );
+    await tick();
+    await tick();
+    await tick();
+    expect(notifyMocks.notifyConnectionLost).toHaveBeenCalledOnce();
+    unmount();
+    expect(notifyMocks.dismissConnectionLost).toHaveBeenCalledOnce();
   });
 });

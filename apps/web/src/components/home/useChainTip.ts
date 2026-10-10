@@ -29,6 +29,7 @@ export function useChainTip(): number | null {
         failures = 0;
         setTip(current?.height ?? null);
       } catch {
+        if (stopped) return;
         failures += 1;
         if (failures === FAILURES_BEFORE_NOTICE) notifyConnectionLost();
       } finally {
@@ -43,6 +44,8 @@ export function useChainTip(): number | null {
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
       stopped = true;
+      // Nothing retries once this unmounts, so the warning must not outlive it.
+      if (failures >= FAILURES_BEFORE_NOTICE) dismissConnectionLost();
       clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisibility);
     };
