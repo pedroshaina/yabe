@@ -2,7 +2,6 @@ import { createPrismaClient, sql, type PrismaClient } from "@yabe/db";
 import { startTestDatabase, type TestDatabase } from "@yabe/db/testing";
 import { pino } from "pino";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { RetriesExhaustedError } from "../resilience/retry.ts";
 import { RpcConnectionError, RpcError } from "../rpc/errors.ts";
 import type { BitcoinNode } from "../rpc/node.ts";
 import { startTestNode, type TestNode } from "../testing/bitcoind.ts";
@@ -313,23 +312,27 @@ describe("sync against regtest", () => {
     ).rejects.toBeInstanceOf(InvalidBlockDataError);
   });
 
-  it("runSync gives up after 10 retries", async () => {
+  it("runSync rides out a long node outage instead of giving up", async () => {
+    // 30 failures in a row with no progress: well past any fixed retry budget.
     let attempts = 0;
     const node: BitcoinNode = {
       ...t.node,
       getBlockCount: async () => {
         attempts += 1;
-        throw refused();
+        if (attempts <= 30) throw refused();
+        return t.node.getBlockCount();
       },
     };
+    const controller = new AbortController();
+    const running = runSync(
+      { ...deps, node, pollIntervalMs: 50, backoff: { initialDelayMs: 1, maxDelayMs: 1 } },
+      controller.signal,
+    );
 
-    await expect(
-      runSync(
-        { ...deps, node, pollIntervalMs: 50, backoff: { initialDelayMs: 1, maxDelayMs: 1 } },
-        new AbortController().signal,
-      ),
-    ).rejects.toBeInstanceOf(RetriesExhaustedError);
-    expect(attempts).toBe(11);
+    await expect.poll(() => attempts, { timeout: 10_000 }).toBeGreaterThan(31);
+    controller.abort();
+
+    await expect(running).resolves.toBeUndefined();
   });
 
   it("runSync keeps going through many transient errors while blocks are being written", async () => {

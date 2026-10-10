@@ -6,8 +6,12 @@ export interface BackoffOptions {
 }
 
 export const DEFAULT_BACKOFF: BackoffOptions = { initialDelayMs: 1_000, maxDelayMs: 30_000 };
-/** About 3 minutes with the default backoff (1+2+4+8+16+30×5 s, before jitter). */
-export const DEFAULT_MAX_RETRIES = 10;
+/**
+ * No cap by default: an unreachable node or database is waited out at the 30 s backoff
+ * ceiling for as long as it lasts, so only genuinely fatal errors stop the indexer (and
+ * count against its container restart limit).
+ */
+export const DEFAULT_MAX_RETRIES = Number.POSITIVE_INFINITY;
 
 /** A transient failure persisted through every retry. Fatal; `cause` is the last error. */
 export class RetriesExhaustedError extends Error {
@@ -24,7 +28,7 @@ export interface RetryOptions {
   isTransient: (error: unknown) => boolean;
   signal?: AbortSignal;
   backoff?: BackoffOptions;
-  /** Retries after the first attempt before giving up; defaults to DEFAULT_MAX_RETRIES. */
+  /** Retries after the first attempt before giving up; defaults to DEFAULT_MAX_RETRIES (no cap). */
   maxRetries?: number;
   /**
    * Called after each failure: true when the operation made progress since the
@@ -39,8 +43,8 @@ export interface RetryOptions {
 /**
  * Runs `operation`, retrying transient failures with exponential backoff and
  * 50–100% jitter. A fatal error is rethrown at once; if `signal` aborts
- * (including mid-wait) the last error is rethrown; after `maxRetries` failed
- * retries it throws RetriesExhaustedError.
+ * (including mid-wait) the last error is rethrown; with a `maxRetries` cap, it
+ * throws RetriesExhaustedError once that many retries have failed.
  */
 export async function withRetry<T>(operation: () => Promise<T>, options: RetryOptions): Promise<T> {
   const { initialDelayMs, maxDelayMs } = options.backoff ?? DEFAULT_BACKOFF;
@@ -71,4 +75,34 @@ export async function withRetry<T>(operation: () => Promise<T>, options: RetryOp
       }
     }
   }
+}
+
+/** The part of a pino logger that logRetry uses. */
+export interface RetryLogger {
+  warn(fields: object, msg: string): void;
+  error(fields: object, msg: string): void;
+}
+
+/** Failures in a row with no progress (about 3 minutes of backoff) before retries are logged as errors. */
+export const STUCK_AFTER_ATTEMPTS = 10;
+
+/**
+ * An `onRetry` that warns on each retry, then logs at error level once STUCK_AFTER_ATTEMPTS
+ * failures in a row have made no progress. Retries never stop, so this is how a long outage,
+ * or a misconfiguration that looks like one (a mistyped host, an RPC timeout too short for a
+ * large block), stands out in the logs.
+ */
+export function logRetry(logger: RetryLogger, label?: string) {
+  const prefix = label ? `${label}: ` : "";
+  return (error: unknown, attempt: number, delayMs: number) => {
+    const fields = { err: error, attempt, delayMs };
+    if (attempt >= STUCK_AFTER_ATTEMPTS) {
+      logger.error(
+        fields,
+        `${prefix}no progress after ${attempt} attempts; the node or database is down or misconfigured (check the URLs and INDEXER_BITCOIN_RPC_TIMEOUT_MS)`,
+      );
+    } else {
+      logger.warn(fields, `${prefix}transient error, retrying`);
+    }
+  };
 }

@@ -71,13 +71,21 @@ services:
       INDEXER_BITCOIN_RPC_URL: http://bitcoind:38332
       INDEXER_BITCOIN_RPC_USER: ${INDEXER_BITCOIN_RPC_USER:?set INDEXER_BITCOIN_RPC_USER in .env}
       INDEXER_BITCOIN_RPC_PASSWORD: ${INDEXER_BITCOIN_RPC_PASSWORD:?set INDEXER_BITCOIN_RPC_PASSWORD in .env}
+      # Optional tuning from .env; the defaults match the indexer's own.
+      INDEXER_MAX_REORG_DEPTH: ${INDEXER_MAX_REORG_DEPTH:-100}
+      INDEXER_POLL_INTERVAL_MS: ${INDEXER_POLL_INTERVAL_MS:-5000}
+      INDEXER_BITCOIN_RPC_TIMEOUT_MS: ${INDEXER_BITCOIN_RPC_TIMEOUT_MS:-30000}
       LOG_LEVEL: ${LOG_LEVEL:-info}
     depends_on:
       yabe-db-migration:
         condition: service_completed_successfully
       bitcoind:
         condition: service_healthy
-    restart: unless-stopped
+    # Outages of the node or database are waited out in-process, so the indexer only exits on
+    # a fatal error (reorg deeper than INDEXER_MAX_REORG_DEPTH, wrong network), which would
+    # fail again on every restart: give up after 5 attempts and stay exited for
+    # `docker compose logs yabe-indexer`. The count resets when Compose starts or recreates it.
+    restart: on-failure:5
     # Finishes the current block on SIGTERM; a large block can take a while.
     stop_grace_period: 1m
 
