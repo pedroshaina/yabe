@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ChevronDownIcon } from "@/components/ui/icons";
-import { notifyRetryable } from "@/components/ui/notify";
+import { dismissToast, notifyRetryable } from "@/components/ui/notify";
 import { fetchBlocks } from "@/lib/api/browser";
 import type { BlockSummary } from "@/lib/api/types";
 import { BlockCard } from "./BlockCard";
@@ -13,6 +13,9 @@ import { NewBlocksPill } from "./NewBlocksPill";
 import { useChainTip } from "./useChainTip";
 import styles from "./BlockTimeline.module.css";
 import timeline from "./Timeline.module.css";
+
+const OLDER_TOAST_ID = "load-older-blocks";
+const NEWER_TOAST_ID = "load-new-blocks";
 
 interface Props {
   initialBlocks: BlockSummary[];
@@ -41,6 +44,14 @@ export function BlockTimeline({ initialBlocks, initialNext, serverNow }: Props) 
   const busy = useRef(false);
   const busyNewer = useRef(false);
   const tip = useChainTip();
+  // Failure toasts belong to the home page's list; leaving home takes them along.
+  useEffect(
+    () => () => {
+      dismissToast(OLDER_TOAST_ID);
+      dismissToast(NEWER_TOAST_ID);
+    },
+    [],
+  );
   const newest = blocks[0]?.height ?? -1;
   const newCount = tip !== null && tip > newest ? tip - newest : 0;
 
@@ -54,8 +65,9 @@ export function BlockTimeline({ initialBlocks, initialNext, serverNow }: Props) 
       if (nextRef.current !== cursor) return;
       setBlocks((current) => appendOlder(current, page.blocks));
       setNext(page.next);
+      dismissToast(OLDER_TOAST_ID);
     } catch {
-      notifyRetryable("Couldn't load more blocks", () => void loadOlder());
+      notifyRetryable("Couldn't load more blocks", () => void loadOlder(), OLDER_TOAST_ID);
     } finally {
       busy.current = false;
       setLoadingOlder(false);
@@ -80,8 +92,9 @@ export function BlockTimeline({ initialBlocks, initialNext, serverNow }: Props) 
           ...current,
         ]);
       }
+      dismissToast(NEWER_TOAST_ID);
     } catch {
-      notifyRetryable("Couldn't load new blocks", () => void loadNewer());
+      notifyRetryable("Couldn't load new blocks", () => void loadNewer(), NEWER_TOAST_ID);
     } finally {
       busyNewer.current = false;
       setLoadingNewer(false);

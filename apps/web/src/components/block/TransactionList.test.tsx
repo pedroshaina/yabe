@@ -6,6 +6,7 @@ import type { TxSummary } from "@/lib/api/types";
 
 const notifyMocks = vi.hoisted(() => ({
   notifyRetryable: vi.fn(),
+  dismissToast: vi.fn(),
   notifyConnectionLost: vi.fn(),
   dismissConnectionLost: vi.fn(),
 }));
@@ -43,7 +44,10 @@ function stubApi(route: (url: URL) => Response | Promise<Response>) {
 const positions = () => screen.getAllByRole("link").map((a) => a.getAttribute("href"));
 
 describe("TransactionList", () => {
-  beforeEach(() => notifyRetryable.mockClear());
+  beforeEach(() => {
+    notifyRetryable.mockClear();
+    notifyMocks.dismissToast.mockClear();
+  });
 
   it("shows the first page and the amounts note", () => {
     stubApi(() => Response.json({}));
@@ -125,6 +129,7 @@ describe("TransactionList", () => {
       expect(notifyRetryable).toHaveBeenCalledWith(
         "Couldn't load more transactions",
         expect.any(Function),
+        "load-more-transactions",
       ),
     );
     expect(positions()).toHaveLength(3);
@@ -132,11 +137,22 @@ describe("TransactionList", () => {
     mode = "ok";
     await user.click(screen.getByRole("button", { name: "Load more transactions" }));
     await waitFor(() => expect(positions()).toHaveLength(5));
+    expect(notifyMocks.dismissToast).toHaveBeenCalledWith("load-more-transactions");
 
     const staleRetry = notifyRetryable.mock.calls[0]![1] as () => void;
     staleRetry();
     await waitFor(() => expect(positions()).toHaveLength(7));
     expect(calls.at(-1)?.searchParams.get("after")).toBe("4");
     expect(new Set(positions()).size).toBe(7);
+  });
+
+  it("takes its failure toast with it when it unmounts (Prev/Next to another block)", () => {
+    stubApi(() => Response.json({}));
+    const { unmount } = render(
+      <TransactionList blockHash={HASH} initialTransactions={span(0, 3)} initialNext={2} />,
+    );
+    notifyMocks.dismissToast.mockClear();
+    unmount();
+    expect(notifyMocks.dismissToast).toHaveBeenCalledWith("load-more-transactions");
   });
 });

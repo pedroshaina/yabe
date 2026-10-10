@@ -7,6 +7,7 @@ import type { BlockSummary } from "@/lib/api/types";
 
 const notifyMocks = vi.hoisted(() => ({
   notifyRetryable: vi.fn(),
+  dismissToast: vi.fn(),
   notifyConnectionLost: vi.fn(),
   dismissConnectionLost: vi.fn(),
 }));
@@ -45,7 +46,10 @@ const blockCalls = (calls: URL[]) => calls.filter((u) => u.pathname === "/api/v1
 const heights = () => screen.getAllByRole("link").map((a) => a.getAttribute("href"));
 
 describe("BlockTimeline", () => {
-  beforeEach(() => notifyRetryable.mockClear());
+  beforeEach(() => {
+    notifyRetryable.mockClear();
+    notifyMocks.dismissToast.mockClear();
+  });
 
   it("shows the first page, newest first, newest marker tinted", () => {
     stubApi(() => Response.json({ tip: null }));
@@ -152,6 +156,19 @@ describe("BlockTimeline", () => {
     const retry = notifyRetryable.mock.calls[0]![1] as () => void;
     retry();
     await waitFor(() => expect(heights()).toHaveLength(5));
+    expect(notifyRetryable.mock.calls[0]![2]).toBe("load-older-blocks");
+    expect(notifyMocks.dismissToast).toHaveBeenCalledWith("load-older-blocks");
+  });
+
+  it("takes its failure toasts with it when the home page goes away", () => {
+    stubApi(() => Response.json({ tip: null }));
+    const { unmount } = render(
+      <BlockTimeline initialBlocks={range(318442, 3)} initialNext={318440} serverNow={NOW} />,
+    );
+    notifyMocks.dismissToast.mockClear();
+    unmount();
+    expect(notifyMocks.dismissToast).toHaveBeenCalledWith("load-older-blocks");
+    expect(notifyMocks.dismissToast).toHaveBeenCalledWith("load-new-blocks");
   });
 
   it("labels the list for assistive technology", () => {
@@ -173,6 +190,7 @@ describe("BlockTimeline new blocks", () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     setVisibility("visible");
     notifyRetryable.mockClear();
+    notifyMocks.dismissToast.mockClear();
     notifyMocks.notifyConnectionLost.mockClear();
     notifyMocks.dismissConnectionLost.mockClear();
   });
@@ -286,6 +304,7 @@ describe("BlockTimeline new blocks", () => {
       expect(notifyRetryable).toHaveBeenCalledWith(
         "Couldn't load new blocks",
         expect.any(Function),
+        "load-new-blocks",
       ),
     );
     expect(screen.getByRole("button", { name: "1 new block" })).toBeInTheDocument();
@@ -297,6 +316,7 @@ describe("BlockTimeline review fixes", () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     setVisibility("visible");
     notifyRetryable.mockClear();
+    notifyMocks.dismissToast.mockClear();
     notifyMocks.notifyConnectionLost.mockClear();
     notifyMocks.dismissConnectionLost.mockClear();
   });
