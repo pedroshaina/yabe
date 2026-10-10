@@ -1,7 +1,7 @@
 # Image publishing and the runtime contract
 
 - **Date:** 2026-10-10
-- **Status:** Proposed
+- **Status:** Accepted
 
 ## Context
 
