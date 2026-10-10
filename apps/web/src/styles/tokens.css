@@ -1,0 +1,30 @@
+:root {
+  color-scheme: light dark;
+
+  --bg: light-dark(#ffffff, #0d151c);
+  --surface: light-dark(#ffffff, #131e27);
+  --sunken: light-dark(#f7fafc, #131e27);
+  --ink: light-dark(#13202b, #e4ecf1);
+  --muted: light-dark(#5d6d7a, #93a4b1);
+  --line: light-dark(#e8eef2, #1f2d38);
+  --strong: light-dark(#13202b, #e4ecf1);
+  --field: light-dark(#dbe4ea, #2a3a47);
+  --rail: light-dark(#cfdbe3, #2a3a47);
+  --link: light-dark(#1a6f9c, #7cc8ec);
+  --accent: light-dark(#2b9fd6, #5cc4ee);
+  --ok: light-dark(#2e9e6b, #4fd18b);
+  --tip: light-dark(rgb(43 159 214 / 14%), rgb(92 196 238 / 18%));
+
+  --content-width: 720px;
+  --header-width: 1040px;
+  --gutter: 24px;
+}
+
+/* A stored choice (cookie → data-theme) overrides the system theme. */
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}

@@ -43,6 +43,11 @@ jobs:
           pnpm openapi
           test -z "$(git status --porcelain -- apps/api/openapi.json)"
 
+      - name: Web API types are up to date
+        run: |
+          pnpm web:types
+          git diff --exit-code -- apps/web/src/lib/api/schema.d.ts
+
       - name: Test
         run: pnpm test
 

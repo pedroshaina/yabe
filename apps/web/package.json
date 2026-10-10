@@ -1,0 +1,30 @@
+{
+  "name": "@yabe/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.ts dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "typecheck": "next typegen && tsc -p tsconfig.json",
+    "types": "openapi-typescript ../api/openapi.json --output src/lib/api/schema.d.ts"
+  },
+  "dependencies": {
+    "next": "16.3.8",
+    "openapi-fetch": "0.17.0",
+    "pino": "10.4.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@testing-library/dom": "10.4.2",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.7",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "openapi-typescript": "7.13.0"
+  }
+}

@@ -1,0 +1,35 @@
+.toggle {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--field);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+/* Moon in light mode (offers dark), sun in dark mode (offers light). */
+.sun {
+  display: none;
+}
+
+:global(:root[data-theme="dark"]) .sun {
+  display: block;
+}
+
+:global(:root[data-theme="dark"]) .moon {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :global(:root:not([data-theme])) .sun {
+    display: block;
+  }
+
+  :global(:root:not([data-theme])) .moon {
+    display: none;
+  }
+}

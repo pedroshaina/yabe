@@ -5,3 +5,4 @@ pnpm-lock.yaml
 .superpowers/
 apps/api/src/script/__fixtures__/core-asm.json
 apps/api/openapi.json
+apps/web/src/lib/api/schema.d.ts

@@ -1,0 +1,19 @@
+.hero {
+  padding-top: 32px;
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display), sans-serif;
+  font-weight: 400;
+  font-size: 28px;
+  letter-spacing: 0.02em;
+  text-wrap: balance;
+}
+
+.status {
+  margin: 16px 0 0;
+  color: var(--muted);
+  font-family: var(--font-mono), monospace;
+}
