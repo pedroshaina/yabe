@@ -48,3 +48,8 @@ export async function waitFor(
   }
   throw new Error(`timed out waiting for ${what}`);
 }
+
+/** The container engine itself (docker or podman), e.g. inspect or logs; returns stdout. */
+export function engineOutput(...args: string[]): string {
+  return execFileSync(ENGINE, args, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+}
