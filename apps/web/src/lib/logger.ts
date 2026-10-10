@@ -1,3 +1,4 @@
+import "server-only";
 import { pino, type Logger } from "pino";
 import { getConfig } from "@/config";
 

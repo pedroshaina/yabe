@@ -14,6 +14,10 @@
   --accent: light-dark(#2b9fd6, #5cc4ee);
   --ok: light-dark(#2e9e6b, #4fd18b);
   --tip: light-dark(rgb(43 159 214 / 14%), rgb(92 196 238 / 18%));
+  --skeleton: light-dark(#eef3f6, #1a2631);
+  --skeleton-shine: light-dark(#f7fafc, #22323f);
+  --warn: light-dark(#b26a00, #f0b45a);
+  --shadow: 0 8px 24px rgb(19 32 43 / 12%);
 
   --content-width: 720px;
   --header-width: 1040px;
@@ -27,4 +31,12 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
+  --shadow: 0 8px 24px rgb(0 0 0 / 45%);
+}
+
+/* light-dark() only takes colours, so the dark shadow follows the system theme here. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --shadow: 0 8px 24px rgb(0 0 0 / 45%);
+  }
 }

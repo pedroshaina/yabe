@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import type { ReactNode } from "react";
 import { Footer } from "@/components/layout/Footer";
 import { TopBar } from "@/components/layout/TopBar";
+import { Toaster } from "@/components/ui/Toaster";
 import { parseTheme, THEME_COOKIE } from "@/lib/theme";
 import "@/styles/tokens.css";
 import "@/styles/globals.css";
@@ -37,6 +38,7 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
         <TopBar theme={theme} />
         <main className={styles.main}>{children}</main>
         <Footer />
+        <Toaster />
       </body>
     </html>
   );
