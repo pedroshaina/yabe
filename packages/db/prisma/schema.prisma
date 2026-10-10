@@ -1,0 +1,87 @@
+generator client {
+  provider        = "prisma-client"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["typedSql"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Block {
+  height       Int           @id
+  hash         String        @unique @db.Char(64)
+  prevHash     String?       @map("prev_hash") @db.Char(64)
+  merkleRoot   String        @map("merkle_root") @db.Char(64)
+  version      Int
+  bits         String        @db.Char(8)
+  nonce        BigInt
+  difficulty   Float
+  time         BigInt
+  medianTime   BigInt        @map("median_time")
+  size         Int
+  strippedSize Int           @map("stripped_size")
+  weight       Int
+  txCount      Int           @map("tx_count")
+  subsidySat   BigInt        @map("subsidy_sat")
+  totalFeeSat  BigInt        @map("total_fee_sat")
+  transactions Transaction[]
+
+  @@map("block")
+}
+
+model Transaction {
+  id          BigInt              @id @default(autoincrement())
+  txid        String              @unique @db.Char(64)
+  blockHeight Int                 @map("block_height")
+  position    Int
+  version     Int
+  locktime    BigInt
+  size        Int
+  vsize       Int
+  weight      Int
+  feeSat      BigInt?             @map("fee_sat")
+  isCoinbase  Boolean             @map("is_coinbase")
+  block       Block               @relation(fields: [blockHeight], references: [height], onDelete: Cascade)
+  inputs      TransactionInput[]
+  outputs     TransactionOutput[]
+
+  @@unique([blockHeight, position])
+  @@map("transaction")
+}
+
+model TransactionOutput {
+  transactionId        BigInt            @map("transaction_id")
+  index                Int
+  valueSat             BigInt            @map("value_sat")
+  scriptType           String            @map("script_type")
+  address              String?
+  scriptHex            String            @map("script_hex")
+  spentByTransactionId BigInt?           @map("spent_by_transaction_id")
+  spentByInputIndex    Int?              @map("spent_by_input_index")
+  transaction          Transaction       @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  spentBy              TransactionInput? @relation(fields: [spentByTransactionId, spentByInputIndex], references: [transactionId, index], onDelete: SetNull)
+
+  @@id([transactionId, index])
+  @@unique([spentByTransactionId, spentByInputIndex])
+  @@map("transaction_output")
+}
+
+model TransactionInput {
+  transactionId  BigInt             @map("transaction_id")
+  index          Int
+  prevTxid       String?            @map("prev_txid") @db.Char(64)
+  prevIndex      Int?               @map("prev_index")
+  prevValueSat   BigInt?            @map("prev_value_sat")
+  prevAddress    String?            @map("prev_address")
+  prevScriptType String?            @map("prev_script_type")
+  sequence       BigInt
+  scriptSigHex   String?            @map("script_sig_hex")
+  witness        String[]
+  coinbaseHex    String?            @map("coinbase_hex")
+  transaction    Transaction        @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  spentOutput    TransactionOutput?
+
+  @@id([transactionId, index])
+  @@map("transaction_input")
+}

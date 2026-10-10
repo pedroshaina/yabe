@@ -1,0 +1,36 @@
+{
+  "name": "@yabe/db",
+  "version": "0.0.0",
+  "private": true,
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./testing": {
+      "source": "./src/testing/index.ts",
+      "types": "./dist/testing/index.d.ts",
+      "default": "./dist/testing/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json",
+    "generate": "tsx scripts/generate.ts"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0"
+  },
+  "devDependencies": {
+    "@testcontainers/postgresql": "12.2.0",
+    "@types/pg": "8.23.1",
+    "pg": "8.23.1",
+    "prisma": "7.10.0"
+  }
+}

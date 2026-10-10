@@ -1,0 +1,23 @@
+.more {
+  padding-left: 44px;
+  margin-top: 6px;
+}
+
+.moreButton {
+  height: 44px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--link);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.moreButton[aria-disabled] {
+  cursor: progress;
+  opacity: 0.6;
+}

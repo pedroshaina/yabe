@@ -1,0 +1,72 @@
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.icon {
+  display: flex;
+  color: var(--accent);
+}
+
+.icon :global([data-tinted]) {
+  fill: var(--tip);
+}
+
+.label {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-mono), monospace;
+  font-size: 30px;
+  font-weight: 500;
+  line-height: 1.1;
+}
+
+.aside {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.nav {
+  display: flex;
+  gap: 4px;
+}
+
+.nav a {
+  height: 44px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  .identity {
+    gap: 12px;
+  }
+
+  .nav a {
+    padding: 0 8px;
+  }
+}

@@ -1,0 +1,29 @@
+.button {
+  position: relative;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+/* 44px tap area without a bigger icon. */
+.button::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+}
+
+.button:hover {
+  color: var(--ink);
+}
+
+.done {
+  color: var(--ok);
+}

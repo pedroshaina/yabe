@@ -1,0 +1,42 @@
+.wrap {
+  margin-bottom: 16px;
+}
+
+.toggle {
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--link);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.heading {
+  margin: 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.script {
+  margin-bottom: 12px;
+}
+
+.name {
+  margin: 0 0 4px;
+  font-size: 13px;
+}
+
+.asm {
+  margin: 0 0 4px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--sunken);
+  font-family: var(--font-mono), monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

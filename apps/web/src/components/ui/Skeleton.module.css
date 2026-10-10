@@ -1,0 +1,33 @@
+.bar {
+  display: block;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--skeleton) 0%,
+    var(--skeleton-shine) 50%,
+    var(--skeleton) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+.still {
+  animation: none;
+  background: var(--skeleton);
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar {
+    animation: none;
+    background: var(--skeleton);
+  }
+}

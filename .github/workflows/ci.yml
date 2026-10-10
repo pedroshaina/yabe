@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [develop]
+  # The release workflow runs it on master before publishing.
+  workflow_call:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Format
+        run: pnpm format:check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type-check
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
+
+      - name: Generated Prisma client is up to date
+        run: |
+          pnpm db:generate
+          git diff --exit-code -- packages/db/src/generated
+
+      - name: OpenAPI contract is up to date
+        run: |
+          pnpm openapi
+          test -z "$(git status --porcelain -- apps/api/openapi.json)"
+
+      - name: Web API types are up to date
+        run: |
+          pnpm web:types
+          git diff --exit-code -- apps/web/src/lib/api/schema.d.ts
+
+      - name: Test
+        run: pnpm test
+
+  images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build the indexer image
+        run: docker build --build-arg APP=indexer -t yabe-indexer .
+
+      - name: Build the API image
+        run: docker build --build-arg APP=api -t yabe-api .
+
+      - name: Build the migration image
+        run: docker build -f packages/db/Dockerfile -t yabe-db-migration .
+
+      - name: Build the web image
+        run: docker build -f apps/web/Dockerfile -t yabe-web .
+
+      - name: Images run as node, carry no .env, and resolve their modules
+        run: |
+          for app in indexer api; do
+            docker run --rm --entrypoint sh "yabe-$app" -c \
+              'test "$(id -un)" = node && test ! -e /app/.env && node --input-type=module -e "await import(\"@yabe/db\"); await import(\"/app/dist/config.js\")"'
+          done
+          docker run --rm --entrypoint sh yabe-web -c \
+            'test "$(id -un)" = node && test ! -e /app/.env && test -f /app/apps/web/server.js'
+
+      - name: Images carry no build tooling (Prisma CLI, TypeScript)
+        run: |
+          for app in indexer api web; do
+            docker run --rm --entrypoint sh "yabe-$app" -c \
+              '! ls /app/node_modules/.pnpm | grep -E "^(prisma|typescript)@"'
+          done
+
+      - name: Images meet the deployment contract (label, platform, migration command)
+        run: |
+          for image in yabe-indexer yabe-api yabe-db-migration yabe-web; do
+            test "$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.source" }}' "$image")" = "https://github.com/pedroshaina/yabe"
+            test "$(docker image inspect --format '{{ .Architecture }}' "$image")" = amd64
+          done
+          test "$(docker image inspect --format '{{ json .Config.Cmd }} {{ .Config.User }}' yabe-db-migration)" = '["node_modules/.bin/prisma","migrate","deploy"] node'

@@ -1,0 +1,14 @@
+**/node_modules
+**/dist
+.git
+.internal
+.superpowers
+.env
+.env.*
+!.env.example
+logs
+*.log
+**/.next
+e2e/test-results
+e2e/playwright-report
+e2e/.seed.json
