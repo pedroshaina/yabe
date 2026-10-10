@@ -79,3 +79,8 @@ export function plural(count: number, singular: string, pluralForm = `${singular
 export function formatSbtcOrDash(sats: number | null): string {
   return sats === null ? "—" : formatSbtc(sats);
 }
+
+/** "tb1pzczwmt…qmsj75": the start and end of a long value; values that fit are returned whole. */
+export function middleEllipsis(value: string, head = 10, tail = 6): string {
+  return value.length <= head + tail + 1 ? value : `${value.slice(0, head)}…${value.slice(-tail)}`;
+}

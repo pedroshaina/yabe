@@ -1,0 +1,54 @@
+.toggle {
+  position: relative;
+  display: block;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Inside an overflow-hidden card cell: keep the focus ring visible. */
+.toggle:focus-visible {
+  outline-offset: -2px;
+}
+
+.full {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.short {
+  display: none;
+}
+
+.toggle[data-open] .full {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .toggle {
+    text-decoration: underline dotted var(--rail);
+    text-underline-offset: 4px;
+  }
+
+  /* Closed on a phone: show the short form; the full one stays the accessible name. */
+  .toggle:not([data-open]) .full {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .toggle:not([data-open]) .short {
+    display: inline;
+  }
+}

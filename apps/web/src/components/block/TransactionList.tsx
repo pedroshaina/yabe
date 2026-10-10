@@ -1,15 +1,17 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ChevronDownIcon } from "@/components/ui/icons";
-import { notifyRetryable } from "@/components/ui/notify";
+import { dismissToast, notifyRetryable } from "@/components/ui/notify";
 import { fetchBlockTransactions } from "@/lib/api/browser";
 import type { TxSummary } from "@/lib/api/types";
 import { TX_PAGE_SIZE } from "@/lib/api/constants";
 import { TxCard } from "./TxCard";
 import { TxCardSkeleton } from "./TxCardSkeleton";
 import styles from "./TransactionList.module.css";
+
+const MORE_TOAST_ID = "load-more-transactions";
 
 interface Props {
   blockHash: string;
@@ -29,6 +31,16 @@ export function TransactionList({ blockHash, initialTransactions, initialNext }:
     nextRef.current = value;
     setNextState(value);
   }
+  // A failure toast belongs to this block's list: Prev/Next remounts the list and takes it along,
+  // and a load still in flight then must not raise one on the next block.
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      dismissToast(MORE_TOAST_ID);
+    };
+  }, []);
 
   async function loadMore(): Promise<void> {
     const cursor = nextRef.current;
@@ -47,8 +59,11 @@ export function TransactionList({ blockHash, initialTransactions, initialNext }:
         return [...current, ...page.transactions.filter((t) => t.position > last)];
       });
       setNext(page.next);
+      dismissToast(MORE_TOAST_ID);
     } catch {
-      notifyRetryable("Couldn't load more transactions", () => void loadMore());
+      if (mounted.current) {
+        notifyRetryable("Couldn't load more transactions", () => void loadMore(), MORE_TOAST_ID);
+      }
     } finally {
       busy.current = false;
       setLoading(false);

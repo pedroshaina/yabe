@@ -85,3 +85,16 @@
 .feeIcon :global([data-tinted]) {
   fill: var(--tip);
 }
+
+@media (max-width: 640px) {
+  /* An opened address takes the card's full width; the amount moves under it. */
+  .row:has([aria-expanded="true"]) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  .row:has([aria-expanded="true"]) .value {
+    align-self: flex-end;
+  }
+}

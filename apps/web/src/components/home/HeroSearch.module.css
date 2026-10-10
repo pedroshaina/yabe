@@ -54,6 +54,11 @@
   font-size: 16px;
 }
 
+/* The form's accent border shows focus; no second ring inside it. */
+.input:focus-visible {
+  outline: none;
+}
+
 .input::placeholder {
   font-size: 14px;
   color: var(--muted);
@@ -70,6 +75,11 @@
   font: inherit;
   font-weight: 500;
   cursor: pointer;
+}
+
+.button[aria-disabled] {
+  cursor: progress;
+  opacity: 0.7;
 }
 
 .hint {

@@ -40,3 +40,10 @@
   align-items: center;
   gap: 12px;
 }
+
+@media (max-width: 640px) {
+  /* Row 1: wordmark left, controls right; row 2: the full-width search. */
+  .controls {
+    margin-left: auto;
+  }
+}

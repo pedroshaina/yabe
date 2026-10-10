@@ -2,6 +2,7 @@ import Link from "next/link";
 import { TxIcon } from "@/components/ui/icons";
 import type { Transaction, TxInput, TxOutput } from "@/lib/api/types";
 import { formatInteger, formatSbtc, formatSbtcOrDash, plural, shortHash } from "@/lib/format";
+import { Address } from "./Address";
 import styles from "./FlowOfFunds.module.css";
 
 function sum(values: (number | null)[]): number | null {
@@ -14,7 +15,13 @@ function InputCard({ input }: { input: TxInput }) {
     <li className={styles.card}>
       <div className={styles.row}>
         <span className={styles.who}>
-          {isCoinbase ? "Coinbase (new coins)" : (input.address ?? input.scriptType ?? "unknown")}
+          {isCoinbase ? (
+            "Coinbase (new coins)"
+          ) : input.address ? (
+            <Address address={input.address} />
+          ) : (
+            (input.scriptType ?? "unknown")
+          )}
         </span>
         {!isCoinbase && <span className={styles.value}>{formatSbtcOrDash(input.valueSat)}</span>}
       </div>
@@ -34,7 +41,9 @@ function OutputCard({ output }: { output: TxOutput }) {
   return (
     <li className={styles.card}>
       <div className={styles.row}>
-        <span className={styles.who}>{output.address ?? output.scriptType}</span>
+        <span className={styles.who}>
+          {output.address ? <Address address={output.address} /> : output.scriptType}
+        </span>
         <span className={styles.value}>{formatSbtc(output.valueSat)}</span>
       </div>
       <div className={styles.meta}>
