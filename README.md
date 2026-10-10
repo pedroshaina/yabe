@@ -91,6 +91,17 @@ A Next.js app (`apps/web`) for browsing the indexed chain: the latest blocks as 
 - It is typed from the committed OpenAPI contract (`pnpm web:types`); CI fails if the types drift.
 - The design and its decisions are in [`docs/specs/02-frontend.md`](docs/specs/02-frontend.md).
 
+## Images
+
+Every push to `master` that passes CI and the end-to-end suite publishes four public images to GitHub Container Registry, all built from that commit and tagged with its full SHA:
+
+- `ghcr.io/pedroshaina/yabe-indexer`
+- `ghcr.io/pedroshaina/yabe-api`
+- `ghcr.io/pedroshaina/yabe-db-migration`
+- `ghcr.io/pedroshaina/yabe-web`
+
+There is no `latest` tag: deployments pin `tag@sha256:digest`. The release run's summary lists all four references. They are `linux/amd64` only. CI and the end-to-end suite check the runtime interface deployments rely on: the `INDEXER_*` and `API_*` variables, `/health` and `/ready`, a clean SIGTERM shutdown, JSON logs on stdout, the non-root `node` user, and the migration image running `prisma migrate deploy`. See [`docs/specs/03-image-publishing.md`](docs/specs/03-image-publishing.md).
+
 ## Development
 
 Requirements: Node.js 24 (see `.nvmrc`), pnpm 10 (`corepack enable`), and Docker or Podman.
@@ -122,7 +133,7 @@ With Podman, set `TESTCONTAINERS_RYUK_DISABLED=true` before `pnpm test`.
 - **Unit tests** cover the pure parts: turning a block into rows, subsidy and fee arithmetic, configuration, error classification and script asm. The asm decoder is checked against output captured from Bitcoin Core itself.
 - **Integration tests** run against real systems, not mocks. They mine regtest blocks containing real transactions and check every stored row. They force a **chain reorganisation** and assert the database matches the node afterwards. They also exercise every API endpoint against a seeded Postgres through the read-only role.
 - **End-to-end tests** (Playwright) run against the whole Compose stack on regtest. They cover the API, the frontend's journeys (browsing, search, not found, paging, the theme, the phone layout), an API outage and recovery, and axe accessibility checks in both themes.
-- **CI** (GitHub Actions) runs format, lint, type-check, build, the tests, the OpenAPI and frontend type drift checks and the image builds on every pull request. The end-to-end suite runs when `master` is updated.
+- **CI** (GitHub Actions) runs format, lint, type-check, build, the tests, the OpenAPI and frontend type drift checks and the image builds on every pull request. The end-to-end suite runs when `master` is updated, and the images are published only if it and CI pass.
 
 ## Design decisions
 
@@ -139,7 +150,7 @@ With Podman, set `TESTCONTAINERS_RYUK_DISABLED=true` before `pnpm test`.
 | Errors           | RFC 9457 problem+json                                         | Ad hoc error bodies                                                   | A standard, predictable error format                                                                          |
 | Tooling          | ESLint + Prettier, pino, GitHub Actions                       | Biome, winston                                                        | Industry-standard choices                                                                                     |
 
-The full decision records are in [`docs/specs/01-backend-typescript-rewrite.md`](docs/specs/01-backend-typescript-rewrite.md) and, for the frontend, [`docs/specs/02-frontend.md`](docs/specs/02-frontend.md).
+The full decision records are [`docs/specs/01-backend-typescript-rewrite.md`](docs/specs/01-backend-typescript-rewrite.md) (the backend), [`docs/specs/02-frontend.md`](docs/specs/02-frontend.md) (the frontend) and [`docs/specs/03-image-publishing.md`](docs/specs/03-image-publishing.md) (publishing the images).
 
 ## Known limitations
 

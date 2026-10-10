@@ -1,11 +1,10 @@
 name: E2E
 
 # The whole Compose stack on regtest, driven by Playwright (e2e/). It builds every image and
-# runs bitcoind, so it is too slow for every PR: it runs when deploying to production (a push
-# to master) or by hand.
+# runs bitcoind, so it is too slow for every PR: the release workflow runs it on master before
+# publishing, and it can be run by hand.
 on:
-  push:
-    branches: [master]
+  workflow_call:
   workflow_dispatch:
 
 jobs:

@@ -4,6 +4,8 @@ on:
   pull_request:
   push:
     branches: [develop]
+  # The release workflow runs it on master before publishing.
+  workflow_call:
 
 jobs:
   check:
@@ -84,3 +86,11 @@ jobs:
             docker run --rm --entrypoint sh "yabe-$app" -c \
               '! ls /app/node_modules/.pnpm | grep -E "^(prisma|typescript)@"'
           done
+
+      - name: Images meet the deployment contract (label, platform, migration command)
+        run: |
+          for image in yabe-indexer yabe-api yabe-db-migration yabe-web; do
+            test "$(docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.source" }}' "$image")" = "https://github.com/pedroshaina/yabe"
+            test "$(docker image inspect --format '{{ .Architecture }}' "$image")" = amd64
+          done
+          test "$(docker image inspect --format '{{ json .Config.Cmd }} {{ .Config.User }}' yabe-db-migration)" = '["node_modules/.bin/prisma","migrate","deploy"] node'

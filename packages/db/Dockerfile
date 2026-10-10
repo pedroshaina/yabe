@@ -1,4 +1,5 @@
 FROM node:24-slim
+LABEL org.opencontainers.image.source="https://github.com/pedroshaina/yabe"
 # Prisma's schema engine links against OpenSSL; without it Prisma warns and guesses a version.
 RUN apt-get update \
   && apt-get install -y --no-install-recommends openssl \
