@@ -1,5 +1,6 @@
 import "server-only";
-import type { ServerApi } from "@/lib/api/server";
+import { cache } from "react";
+import { serverApi, type ServerApi } from "@/lib/api/server";
 import { getLogger } from "@/lib/logger";
 import { classifyQuery } from "@/lib/search";
 
@@ -35,3 +36,6 @@ export async function loadSearch(api: ServerApi, raw: string): Promise<SearchOut
     return { kind: "unavailable" };
   }
 }
+
+/** One API round trip per request, shared by generateMetadata and the page. */
+export const getSearch = cache((raw: string) => loadSearch(serverApi(), raw));
