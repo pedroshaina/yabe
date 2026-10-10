@@ -138,17 +138,20 @@ describe("behind a proxy that strips a public prefix", () => {
     const app = await buildApp({ prisma, corsOrigins: [], logger: false, publicPrefix });
     try {
       const html = (await app.inject({ url: "/docs" })).body;
+      const slashed = (await app.inject({ url: "/docs/" })).body;
       const served = (await app.inject({ url: "/openapi.json" })).json<{ servers?: unknown }>();
       const ui = (await app.inject({ url: "/docs/json" })).json<{ servers?: unknown }>();
-      return { html, served, ui };
+      return { html, slashed, served, ui };
     } finally {
       await app.close();
     }
   };
 
   it("links the docs UI's assets and points the document at the prefix", async () => {
-    const { html, served, ui } = await docs("/api");
+    const { html, slashed, served, ui } = await docs("/api");
     expect(html).toContain('src="/api/docs/static/swagger-ui-bundle.js"');
+    // With a trailing slash the links are relative, which a prefix-stripping proxy keeps intact.
+    expect(slashed).toContain('src="./static/swagger-ui-bundle.js"');
     expect(html).not.toMatch(/"\/docs\/static\//);
     expect(served.servers).toEqual([{ url: "/api" }]);
     expect(ui.servers).toEqual([{ url: "/api" }]);
