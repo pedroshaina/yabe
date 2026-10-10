@@ -82,6 +82,7 @@ Everything is configured through `.env`, documented in [`.env.example`](.env.exa
 - **App settings**, prefixed with the app's name: `INDEXER_…` and `API_…`, plus a shared `LOG_LEVEL`. In Compose, the containers get their connection URLs from `compose.yaml`; the URLs in `.env` are for running the apps on your machine.
 - **`WEB_API_URL`**: where the frontend reaches the API when it runs on your machine (`pnpm dev:web`). In Compose, `yabe-web` uses `http://yabe-api:8080`.
 - **`API_CORS_ORIGINS`**: the browser origins allowed to call the API, comma-separated (for example `http://localhost:5173`).
+- **`API_PUBLIC_PREFIX`**: the path a reverse proxy strips before requests reach the API, for example `/api` when `/api/v1/blocks` arrives as `/v1/blocks`. The routes stay at the root; the prefix makes Swagger UI load at `/api/docs` and adds it to the document's `servers`, so "Try it out" calls `/api/v1/...`. Unset by default, as Compose publishes the API directly.
 
 ## Frontend
 
