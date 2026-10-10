@@ -1,17 +1,8 @@
-import { PHASE_PRODUCTION_BUILD } from "next/constants";
-
+// Runs once when a server starts. Node-only code lives in instrumentation-node.ts so the
+// Edge bundle never compiles it.
 export async function register(): Promise<void> {
-  if (process.env.NEXT_RUNTIME !== "nodejs" || process.env.NEXT_PHASE === PHASE_PRODUCTION_BUILD) {
-    return;
-  }
-  const { ConfigError, getConfig } = await import("./config");
-  try {
-    getConfig();
-  } catch (error) {
-    if (error instanceof ConfigError) {
-      process.stderr.write(`${error.message}\n`);
-      process.exit(1);
-    }
-    throw error;
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    const { checkConfigOrExit } = await import("./instrumentation-node");
+    checkConfigOrExit();
   }
 }

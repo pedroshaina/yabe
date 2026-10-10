@@ -9,6 +9,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Don't write AGENTS.md / CLAUDE.md into the app on `next dev`.
+  agentRules: false,
   reactStrictMode: true,
   headers() {
     return Promise.resolve([{ source: "/:path*", headers: securityHeaders }]);
