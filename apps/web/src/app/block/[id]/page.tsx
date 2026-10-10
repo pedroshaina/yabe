@@ -17,9 +17,9 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const loaded = await getBlock(id);
-  return {
-    title: loaded.kind === "ok" ? `Block ${formatInteger(loaded.data.block.height)}` : "Block",
-  };
+  if (loaded.kind === "ok") return { title: `Block ${formatInteger(loaded.data.block.height)}` };
+  // Streamed: this title is already out when notFound() renders, so it has to say so itself.
+  return { title: loaded.kind === "not-found" ? "Not found" : "Block" };
 }
 
 export default async function BlockPage({ params }: Props) {

@@ -18,9 +18,9 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { txid } = await params;
   const loaded = await getTransaction(txid);
-  return {
-    title: loaded.kind === "ok" ? `Transaction ${shortHash(loaded.data.txid)}` : "Transaction",
-  };
+  if (loaded.kind === "ok") return { title: `Transaction ${shortHash(loaded.data.txid)}` };
+  // Streamed: this title is already out when notFound() renders, so it has to say so itself.
+  return { title: loaded.kind === "not-found" ? "Not found" : "Transaction" };
 }
 
 export default async function TransactionPage({ params }: Props) {
