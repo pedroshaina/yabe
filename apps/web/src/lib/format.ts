@@ -40,3 +40,42 @@ export function formatUtc(unixSeconds: number): string {
   const iso = new Date(unixSeconds * 1000).toISOString();
   return `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`;
 }
+
+/** "a91c…04e2": first and last 4 characters of a hash or txid. */
+export function shortHash(hash: string): string {
+  return hash.length <= 10 ? hash : `${hash.slice(0, 4)}…${hash.slice(-4)}`;
+}
+
+/** Weight units as "x.xx MWU" (the block limit is 4.00 MWU). */
+export function formatWeight(weight: number): string {
+  return `${(weight / 1_000_000).toFixed(2)} MWU`;
+}
+
+/** sat/vB with one decimal; "—" when there is none (coinbase). */
+export function formatFeeRate(rate: number | null): string {
+  return rate === null ? "—" : `${rate.toFixed(1)} sat/vB`;
+}
+
+const DIFFICULTY_SMALL = new Intl.NumberFormat("en-US", { maximumSignificantDigits: 4 });
+
+/** Up to 4 significant digits below 1,000 (signet, regtest); grouped integers above. */
+export function formatDifficulty(difficulty: number): string {
+  return difficulty < 1_000
+    ? DIFFICULTY_SMALL.format(difficulty)
+    : formatInteger(Math.round(difficulty));
+}
+
+/** Block version as 0x-prefixed, 8 hex digits. */
+export function formatVersion(version: number): string {
+  return `0x${(version >>> 0).toString(16).padStart(8, "0")}`;
+}
+
+/** "1 input", "1,204 inputs". */
+export function plural(count: number, singular: string, pluralForm = `${singular}s`): string {
+  return `${formatInteger(count)} ${count === 1 ? singular : pluralForm}`;
+}
+
+/** sBTC, or "—" when the value is unknown (a coinbase input or fee). */
+export function formatSbtcOrDash(sats: number | null): string {
+  return sats === null ? "—" : formatSbtc(sats);
+}
