@@ -41,10 +41,9 @@ test("unknown and invalid searches answer 404 with the not-found page", async ({
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Not found");
   await expect(page.getByText(UNKNOWN)).toBeVisible();
   await expect(page).toHaveTitle("Not found · Y.A.B.E");
-  await expect(page.getByRole("link", { name: grouped(seed.tip), exact: true })).toHaveAttribute(
-    "href",
-    `/block/${seed.tip}`,
-  );
+  await expect(
+    page.getByText("Block heights go from 0 to the latest indexed block."),
+  ).toBeVisible();
 
   const invalid = await page.goto("/search?q=xyz");
   expect(invalid?.status()).toBe(404);

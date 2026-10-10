@@ -22,12 +22,14 @@ describe("NotFoundView", () => {
 
   it("shows the search that found nothing, the hints and the way back", () => {
     at("/search", `q=${HASH}`);
-    render(<NotFoundView tipHeight={325786} />);
+    render(<NotFoundView />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Not found");
     expect(screen.getByText("Search")).toBeInTheDocument();
     expect(screen.getByText(HASH).tagName).toBe("CODE");
     expect(screen.getByText(NO_MATCH)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "325,786" })).toHaveAttribute("href", "/block/325786");
+    expect(
+      screen.getByText("Block heights go from 0 to the latest indexed block."),
+    ).toBeInTheDocument();
     expect(screen.getByText("Signet").tagName).toBe("STRONG");
     expect(screen.getByRole("link", { name: "← Back to latest blocks" })).toHaveAttribute(
       "href",
@@ -37,7 +39,7 @@ describe("NotFoundView", () => {
 
   it("says when the query can't be a height, hash or txid", () => {
     at("/search", "q=xyz");
-    render(<NotFoundView tipHeight={325786} />);
+    render(<NotFoundView />);
     expect(screen.getByText("xyz")).toBeInTheDocument();
     expect(screen.getByText(INVALID)).toBeInTheDocument();
     expect(screen.queryByText(NO_MATCH)).toBeNull();
@@ -45,21 +47,20 @@ describe("NotFoundView", () => {
 
   it("shows the id from a /block or /tx URL", () => {
     at("/block/9999999999");
-    render(<NotFoundView tipHeight={325786} />);
+    render(<NotFoundView />);
     expect(screen.getByText("9999999999")).toBeInTheDocument();
     expect(screen.getByText(NO_MATCH)).toBeInTheDocument();
   });
 
-  it("leaves out the height link when the tip is unknown", () => {
+  it("names no height, so it needs nothing from the API", () => {
     at(`/tx/${HASH}`);
-    render(<NotFoundView tipHeight={null} />);
-    expect(screen.getByText("Block heights go from 0 to the latest block.")).toBeInTheDocument();
+    render(<NotFoundView />);
     expect(screen.queryByRole("link", { name: /^\d/ })).toBeNull();
   });
 
   it("shows no query line for an unknown page", () => {
     at("/nope");
-    const { container } = render(<NotFoundView tipHeight={1} />);
+    const { container } = render(<NotFoundView />);
     expect(container.querySelector("code")).toBeNull();
     expect(screen.getByText(NO_MATCH)).toBeInTheDocument();
   });
