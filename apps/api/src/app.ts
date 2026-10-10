@@ -21,9 +21,12 @@ export interface AppDeps {
   prisma: PrismaClient;
   corsOrigins: string[];
   logger: FastifyServerOptions["logger"];
+  /** The path a proxy strips before requests reach the API, e.g. "/api"; empty when none. */
+  publicPrefix?: string;
 }
 
 export async function buildApp(deps: AppDeps) {
+  const publicPrefix = deps.publicPrefix ?? "";
   const app = Fastify({
     logger: deps.logger,
     bodyLimit: 1_024,
@@ -62,11 +65,14 @@ export async function buildApp(deps: AppDeps) {
         description:
           "Read-only REST API over an indexed Bitcoin chain. Amounts are in satoshis; times are unix seconds.",
       },
+      // Without a prefix, leave servers out: clients default to the document's own origin.
+      ...(publicPrefix ? { servers: [{ url: publicPrefix }] } : {}),
     },
     transform: jsonSchemaTransform,
     transformObject: jsonSchemaTransformObject,
   });
-  await app.register(swaggerUi, { routePrefix: "/docs" });
+  // indexPrefix: the UI links its assets by absolute path, which must include the stripped prefix.
+  await app.register(swaggerUi, { routePrefix: "/docs", indexPrefix: publicPrefix });
   app.get("/openapi.json", { schema: { hide: true } }, () => app.swagger());
 
   await app.register(statusRoutes, { prisma: deps.prisma });

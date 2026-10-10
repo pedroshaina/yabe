@@ -12,8 +12,22 @@ describe("loadConfig", () => {
       corsOrigins: [],
       logLevel: "info",
       queryTimeoutMs: 10_000,
+      publicPrefix: "",
     });
   });
+
+  it.each(["/api", "/yabe/api", "/api-v2"])("accepts the public prefix %s", (prefix) => {
+    expect(loadConfig({ ...valid, API_PUBLIC_PREFIX: prefix }).publicPrefix).toBe(prefix);
+  });
+
+  it.each(["api", "/", "/api/", "/api?x=1", "/api#x", "/a/../b", "/a//b", "/a b"])(
+    "rejects the public prefix %s, naming the variable",
+    (prefix) => {
+      expect(() => loadConfig({ ...valid, API_PUBLIC_PREFIX: prefix })).toThrow(
+        /API_PUBLIC_PREFIX/,
+      );
+    },
+  );
 
   it("reads the query timeout", () => {
     expect(loadConfig({ ...valid, API_QUERY_TIMEOUT_MS: "2500" }).queryTimeoutMs).toBe(2_500);

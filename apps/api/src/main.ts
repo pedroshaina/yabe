@@ -20,6 +20,7 @@ const app = await buildApp({
   prisma,
   corsOrigins: config.corsOrigins,
   logger: { level: config.logLevel },
+  publicPrefix: config.publicPrefix,
 });
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
