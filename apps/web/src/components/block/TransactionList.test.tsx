@@ -155,4 +155,22 @@ describe("TransactionList", () => {
     unmount();
     expect(notifyMocks.dismissToast).toHaveBeenCalledWith("load-more-transactions");
   });
+
+  it("raises no toast for a load that fails after the list is gone", async () => {
+    let fail!: () => void;
+    const gate = new Promise<void>((r) => (fail = r));
+    stubApi(async () => {
+      await gate;
+      return Response.json({}, { status: 503 });
+    });
+    const user = userEvent.setup();
+    const { unmount } = render(
+      <TransactionList blockHash={HASH} initialTransactions={span(0, 3)} initialNext={2} />,
+    );
+    await user.click(screen.getByRole("button", { name: "Load more transactions" }));
+    unmount();
+    fail();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(notifyRetryable).not.toHaveBeenCalled();
+  });
 });

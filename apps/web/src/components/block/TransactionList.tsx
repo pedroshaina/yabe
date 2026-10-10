@@ -31,8 +31,16 @@ export function TransactionList({ blockHash, initialTransactions, initialNext }:
     nextRef.current = value;
     setNextState(value);
   }
-  // A failure toast belongs to this block's list: Prev/Next remounts the list and takes it along.
-  useEffect(() => () => dismissToast(MORE_TOAST_ID), []);
+  // A failure toast belongs to this block's list: Prev/Next remounts the list and takes it along,
+  // and a load still in flight then must not raise one on the next block.
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      dismissToast(MORE_TOAST_ID);
+    };
+  }, []);
 
   async function loadMore(): Promise<void> {
     const cursor = nextRef.current;
@@ -53,7 +61,9 @@ export function TransactionList({ blockHash, initialTransactions, initialNext }:
       setNext(page.next);
       dismissToast(MORE_TOAST_ID);
     } catch {
-      notifyRetryable("Couldn't load more transactions", () => void loadMore(), MORE_TOAST_ID);
+      if (mounted.current) {
+        notifyRetryable("Couldn't load more transactions", () => void loadMore(), MORE_TOAST_ID);
+      }
     } finally {
       busy.current = false;
       setLoading(false);

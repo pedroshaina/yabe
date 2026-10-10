@@ -44,14 +44,17 @@ export function BlockTimeline({ initialBlocks, initialNext, serverNow }: Props) 
   const busy = useRef(false);
   const busyNewer = useRef(false);
   const tip = useChainTip();
-  // Failure toasts belong to the home page's list; leaving home takes them along.
-  useEffect(
-    () => () => {
+  // Failure toasts belong to the home page's list: leaving home takes them along, and a load
+  // still in flight then must not raise one on the next page.
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
       dismissToast(OLDER_TOAST_ID);
       dismissToast(NEWER_TOAST_ID);
-    },
-    [],
-  );
+    };
+  }, []);
   const newest = blocks[0]?.height ?? -1;
   const newCount = tip !== null && tip > newest ? tip - newest : 0;
 
@@ -67,7 +70,8 @@ export function BlockTimeline({ initialBlocks, initialNext, serverNow }: Props) 
       setNext(page.next);
       dismissToast(OLDER_TOAST_ID);
     } catch {
-      notifyRetryable("Couldn't load more blocks", () => void loadOlder(), OLDER_TOAST_ID);
+      if (mounted.current)
+        notifyRetryable("Couldn't load more blocks", () => void loadOlder(), OLDER_TOAST_ID);
     } finally {
       busy.current = false;
       setLoadingOlder(false);
@@ -94,7 +98,8 @@ export function BlockTimeline({ initialBlocks, initialNext, serverNow }: Props) 
       }
       dismissToast(NEWER_TOAST_ID);
     } catch {
-      notifyRetryable("Couldn't load new blocks", () => void loadNewer(), NEWER_TOAST_ID);
+      if (mounted.current)
+        notifyRetryable("Couldn't load new blocks", () => void loadNewer(), NEWER_TOAST_ID);
     } finally {
       busyNewer.current = false;
       setLoadingNewer(false);

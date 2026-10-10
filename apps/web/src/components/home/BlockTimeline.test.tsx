@@ -160,6 +160,25 @@ describe("BlockTimeline", () => {
     expect(notifyMocks.dismissToast).toHaveBeenCalledWith("load-older-blocks");
   });
 
+  it("raises no toast for a load that fails after the home page is gone", async () => {
+    let fail!: () => void;
+    const gate = new Promise<void>((r) => (fail = r));
+    stubApi(async (url) => {
+      if (url.pathname === "/api/v1/status") return Response.json({ tip: null });
+      await gate;
+      return Response.json({ status: 503 }, { status: 503 });
+    });
+    const user = userEvent.setup();
+    const { unmount } = render(
+      <BlockTimeline initialBlocks={range(318442, 3)} initialNext={318440} serverNow={NOW} />,
+    );
+    await user.click(screen.getByRole("button", { name: "Load older blocks" }));
+    unmount();
+    fail();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(notifyRetryable).not.toHaveBeenCalled();
+  });
+
   it("takes its failure toasts with it when the home page goes away", () => {
     stubApi(() => Response.json({ tip: null }));
     const { unmount } = render(
