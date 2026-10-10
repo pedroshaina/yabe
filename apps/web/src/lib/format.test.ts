@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { formatInteger, formatRelativeTime, formatSbtc, formatSize, formatUtc } from "@/lib/format";
+import {
+  formatDifficulty,
+  formatFeeRate,
+  formatInteger,
+  formatRelativeTime,
+  formatSbtc,
+  formatSbtcOrDash,
+  formatSize,
+  formatUtc,
+  formatVersion,
+  formatWeight,
+  plural,
+  shortHash,
+} from "@/lib/format";
 
 describe("formatInteger", () => {
   it.each([
@@ -63,5 +76,80 @@ describe("formatRelativeTime", () => {
 describe("formatUtc", () => {
   it("formats unix seconds as a UTC date and time", () => {
     expect(formatUtc(Date.UTC(2026, 9, 9, 11, 41, 30) / 1000)).toBe("2026-10-09 11:41 UTC");
+  });
+});
+
+describe("shortHash", () => {
+  it("keeps the first and last 4 characters", () => {
+    expect(shortHash("a91c0000000000000000000000000000000000000000000000000000000004e2")).toBe(
+      "a91c…04e2",
+    );
+  });
+  it("leaves short strings alone", () => {
+    expect(shortHash("abcdefgh")).toBe("abcdefgh");
+  });
+});
+
+describe("formatWeight", () => {
+  it.each([
+    [0, "0.00 MWU"],
+    [1_260, "0.00 MWU"],
+    [1_640_000, "1.64 MWU"],
+    [4_000_000, "4.00 MWU"],
+  ])("formats %d WU as %s", (weight, expected) => {
+    expect(formatWeight(weight)).toBe(expected);
+  });
+});
+
+describe("formatFeeRate", () => {
+  it.each([
+    [10, "10.0 sat/vB"],
+    [1.04, "1.0 sat/vB"],
+    [228.0434782608, "228.0 sat/vB"],
+    [null, "—"],
+  ])("formats %s", (rate, expected) => {
+    expect(formatFeeRate(rate)).toBe(expected);
+  });
+});
+
+describe("formatDifficulty", () => {
+  it.each([
+    [0.002616046, "0.002616"],
+    [1, "1"],
+    [123.456789, "123.5"],
+    [1_234_567.89, "1,234,568"],
+    [83_148_355_189_239.77, "83,148,355,189,240"],
+  ])("formats %d as %s", (difficulty, expected) => {
+    expect(formatDifficulty(difficulty)).toBe(expected);
+  });
+});
+
+describe("formatVersion", () => {
+  it.each([
+    [0x20000000, "0x20000000"],
+    [1, "0x00000001"],
+    [0x3fff0000, "0x3fff0000"],
+  ])("formats %d as %s", (version, expected) => {
+    expect(formatVersion(version)).toBe(expected);
+  });
+});
+
+describe("plural", () => {
+  it.each([
+    [0, "input", undefined, "0 inputs"],
+    [1, "input", undefined, "1 input"],
+    [1204, "input", undefined, "1,204 inputs"],
+    [1, "confirmation", undefined, "1 confirmation"],
+    [3, "confirmation", undefined, "3 confirmations"],
+  ])("plural(%d, %s)", (count, singular, pluralForm, expected) => {
+    expect(plural(count, singular, pluralForm)).toBe(expected);
+  });
+});
+
+describe("formatSbtcOrDash", () => {
+  it("formats sats or shows a dash", () => {
+    expect(formatSbtcOrDash(1410)).toBe("0.00001410");
+    expect(formatSbtcOrDash(0)).toBe("0.00000000");
+    expect(formatSbtcOrDash(null)).toBe("—");
   });
 });
