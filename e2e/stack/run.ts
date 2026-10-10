@@ -3,6 +3,10 @@ import { fileURLToPath } from "node:url";
 import { compose } from "./compose.ts";
 
 // The whole run: up, seed, the Playwright suite (extra arguments go to it), and always down.
+// Ctrl-C signals the whole process group: the running step gets it and stops, and this
+// process ignores it, so it goes on to print the logs and tear the stack down.
+process.on("SIGINT", () => {});
+process.on("SIGTERM", () => {});
 const script = (name: string) => fileURLToPath(new URL(`${name}.ts`, import.meta.url));
 const run = (command: string, args: string[]) =>
   spawnSync(command, args, { stdio: "inherit" }).status === 0;
