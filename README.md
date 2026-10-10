@@ -2,16 +2,16 @@
 
 # yabe
 
-**Yet Another Block Explorer**: a Bitcoin indexer and a read-only REST API, written in TypeScript. The indexer copies the chain from a Bitcoin Core node into Postgres and keeps it correct across chain reorganisations. The API serves blocks, transactions and search, described by a committed OpenAPI contract that a frontend can build on.
+**Yet Another Block Explorer**: a Bitcoin indexer, a read-only REST API and a web frontend, written in TypeScript. The indexer copies the chain from a Bitcoin Core node into Postgres and keeps it correct across chain reorganisations. The API serves blocks, transactions and search, described by a committed OpenAPI contract. The frontend is built on that contract.
 
 It runs against **signet** with one command and is tested against **regtest**.
 
 ## Architecture
 
 ```
-┌──────────┐  JSON-RPC  ┌──────────────┐  writes  ┌──────────┐  reads (read-only role)  ┌──────────┐
-│ bitcoind │ ─────────▶ │ yabe-indexer │ ───────▶ │ Postgres │ ◀─────────────────────── │ yabe-api │ ◀── HTTP
-└──────────┘            └──────────────┘          └──────────┘                          └──────────┘
+┌──────────┐  JSON-RPC  ┌──────────────┐  writes  ┌──────────┐  reads (read-only role)  ┌──────────┐  HTTP  ┌──────────┐
+│ bitcoind │ ─────────▶ │ yabe-indexer │ ───────▶ │ Postgres │ ◀─────────────────────── │ yabe-api │ ◀───── │ yabe-web │ ◀── browser
+└──────────┘            └──────────────┘          └──────────┘                          └──────────┘        └──────────┘
 ```
 
 - **The indexer is the only writer, and the API only reads**, through a database role that can't write. The two services share a database package, never each other's code, so the schema is their only contract.
@@ -22,7 +22,9 @@ It runs against **signet** with one command and is tested against **regtest**.
 ```
 apps/indexer    bitcoind → Postgres (writes)
 apps/api        Postgres → HTTP (reads only)
+apps/web        the frontend (Next.js), API → HTML
 packages/db     Prisma schema, migrations, typed SQL, the shared client
+e2e             end-to-end tests (Playwright) against the whole stack on regtest
 ```
 
 ## Quick start
@@ -35,7 +37,7 @@ cp .env.example .env    # then change the passwords (see "Configuration")
 docker compose up -d
 ```
 
-This starts five containers:
+This starts six containers:
 
 | Container           | What it does                                                                                         |
 | ------------------- | ---------------------------------------------------------------------------------------------------- |
@@ -44,10 +46,11 @@ This starts five containers:
 | `yabe-db-migration` | Applies the database migrations, then exits                                                          |
 | `yabe-indexer`      | Starts once the migration succeeds and bitcoind is healthy, then follows the chain                   |
 | `yabe-api`          | Starts once the migration succeeds; serves http://127.0.0.1:8080                                     |
+| `yabe-web`          | Starts once the API is healthy; serves the frontend on http://127.0.0.1:3000                         |
 
-Open **http://127.0.0.1:8080/docs** to explore the API. The node first syncs signet from the network, and the indexer follows it, so recent blocks appear as both catch up. Follow progress with `docker compose logs -f yabe-indexer`. A fully indexed signet takes tens of gigabytes of disk for the node and the database together.
+Open **http://127.0.0.1:3000** to browse the chain, or **http://127.0.0.1:8080/docs** to explore the API. The node first syncs signet from the network, and the indexer follows it, so recent blocks appear as both catch up. Follow progress with `docker compose logs -f yabe-indexer`. A fully indexed signet takes tens of gigabytes of disk for the node and the database together.
 
-Every port is published on 127.0.0.1 only (API 8080, Postgres 5432, RPC 38332), so nothing is reachable from your network.
+Every port is published on 127.0.0.1 only (frontend 3000, API 8080, Postgres 5432, RPC 38332), so nothing is reachable from your network.
 
 **If the indexer stops.** It waits out outages of the node or the database however long they last, retrying at most every 30 seconds. It exits only on an error a restart can't fix, for example a chain reorganisation deeper than `INDEXER_MAX_REORG_DEPTH`, a node on the wrong network, or wrong credentials. The container is then restarted up to 5 times (counted since Compose last started or recreated it) and left stopped rather than restarting forever. `docker compose ps -a` shows it as exited and `docker compose logs yabe-indexer` says why. Once the cause is fixed (for example a larger `INDEXER_MAX_REORG_DEPTH` in `.env`), `docker compose up -d yabe-indexer` starts it again. After a host or Docker restart, run `docker compose up -d`: on Docker the other services come back by themselves but the indexer does not, and on Podman none of them do.
 
@@ -77,7 +80,16 @@ Everything is configured through `.env`, documented in [`.env.example`](.env.exa
 - **Postgres and role passwords** (`POSTGRES_*`, `YABE_INDEXER_PASSWORD`, `YABE_API_PASSWORD`). Role passwords end up in connection URLs, so keep them URL-safe, for example `openssl rand -hex 32`. They take effect only when the database volume is first created.
 - **Bitcoin Core RPC credentials.** Generate all three lines with `pnpm --filter @yabe/indexer rpcauth <user> <password>`. Compose reads the whole file, so `BITCOIN_RPC_AUTH` must be set even to start just the database.
 - **App settings**, prefixed with the app's name: `INDEXER_…` and `API_…`, plus a shared `LOG_LEVEL`. In Compose, the containers get their connection URLs from `compose.yaml`; the URLs in `.env` are for running the apps on your machine.
+- **`WEB_API_URL`**: where the frontend reaches the API when it runs on your machine (`pnpm dev:web`). In Compose, `yabe-web` uses `http://yabe-api:8080`.
 - **`API_CORS_ORIGINS`**: the browser origins allowed to call the API, comma-separated (for example `http://localhost:5173`).
+
+## Frontend
+
+A Next.js app (`apps/web`) for browsing the indexed chain: the latest blocks as a timeline, block and transaction pages, search by height, hash or txid, light and dark themes, and phone layouts. Pages are rendered on the server, which calls the API over the Compose network. The browser only talks to the frontend.
+
+- With the stack running, open http://127.0.0.1:3000.
+- It is typed from the committed OpenAPI contract (`pnpm web:types`); CI fails if the types drift.
+- The design and its decisions are in [`docs/specs/02-frontend.md`](docs/specs/02-frontend.md).
 
 ## Development
 
@@ -86,20 +98,22 @@ Requirements: Node.js 24 (see `.nvmrc`), pnpm 10 (`corepack enable`), and Docker
 ```bash
 pnpm install
 docker compose up -d bitcoind yabe-db-migration   # the node, the database and its migrations
-pnpm dev                                          # the indexer and the API, on your machine
+pnpm dev                                          # the indexer, the API and the frontend, on your machine
 ```
 
-- If the full stack is running, stop its apps first: `docker compose stop yabe-indexer yabe-api`. Run only one indexer at a time; a second one would fail on the first block both try to write. And while the `yabe-api` container runs, http://127.0.0.1:8080 keeps reaching it rather than your local API.
-- `pnpm dev:indexer` and `pnpm dev:api` run one app each. On Ctrl-C, pnpm reports exit code 130 (its own convention for an interrupted run); the app itself shuts down cleanly.
+- If the full stack is running, stop its apps first: `docker compose stop yabe-indexer yabe-api yabe-web`. Run only one indexer at a time; a second one would fail on the first block both try to write. And while the `yabe-api` container runs, http://127.0.0.1:8080 keeps reaching it rather than your local API.
+- `pnpm dev:indexer`, `pnpm dev:api` and `pnpm dev:web` run one app each. The frontend (http://localhost:3000) reaches the API at `WEB_API_URL`. It shares port 3000 with the `yabe-web` container, so stop one of the two. On Ctrl-C, pnpm reports exit code 130 (its own convention for an interrupted run); the app itself shuts down cleanly.
 
-| Command                                      | Does                                                                                                                                                         |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `pnpm test`                                  | Unit and integration tests. Testcontainers starts throwaway Postgres and regtest bitcoind containers, so only Docker is needed                               |
-| `pnpm lint`, `pnpm typecheck`, `pnpm format` | ESLint, the TypeScript compiler, Prettier                                                                                                                    |
-| `pnpm build`                                 | Compiles every package with `tsc`                                                                                                                            |
-| `pnpm openapi`                               | Regenerates `apps/api/openapi.json` from the routes                                                                                                          |
-| `pnpm db:generate`                           | Regenerates the Prisma client and typed SQL                                                                                                                  |
-| `./scripts/smoke.sh`                         | The whole Compose stack on regtest: mines blocks with a real spend and checks the API serves them. Needs curl and jq, and leaves your signet stack untouched |
+| Command                                           | Does                                                                                                                                                                                                                                                             |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm test`                                       | Unit and integration tests. Testcontainers starts throwaway Postgres and regtest bitcoind containers, so only Docker is needed                                                                                                                                   |
+| `pnpm lint`, `pnpm typecheck`, `pnpm format`      | ESLint, the TypeScript compiler, Prettier                                                                                                                                                                                                                        |
+| `pnpm build`                                      | Builds every package: `tsc`, and `next build` for the frontend                                                                                                                                                                                                   |
+| `pnpm openapi`                                    | Regenerates `apps/api/openapi.json` from the routes                                                                                                                                                                                                              |
+| `pnpm db:generate`                                | Regenerates the Prisma client and typed SQL                                                                                                                                                                                                                      |
+| `pnpm e2e`                                        | The end-to-end suite: builds the images, starts the whole stack on regtest (project `yabe-e2e`, ports 13000 and 18080), mines a known chain, runs Playwright and tears it all down. Leaves your signet stack untouched. Run `pnpm e2e:install` once for Chromium |
+| `pnpm e2e:up`, `e2e:seed`, `e2e:test`, `e2e:down` | The same steps one at a time, to keep the stack up while you iterate on specs (`pnpm e2e:test search` runs one file)                                                                                                                                             |
+| `pnpm web:types`                                  | Regenerates the frontend's API types after a contract change                                                                                                                                                                                                     |
 
 With Podman, set `TESTCONTAINERS_RYUK_DISABLED=true` before `pnpm test`.
 
@@ -107,7 +121,8 @@ With Podman, set `TESTCONTAINERS_RYUK_DISABLED=true` before `pnpm test`.
 
 - **Unit tests** cover the pure parts: turning a block into rows, subsidy and fee arithmetic, configuration, error classification and script asm. The asm decoder is checked against output captured from Bitcoin Core itself.
 - **Integration tests** run against real systems, not mocks. They mine regtest blocks containing real transactions and check every stored row. They force a **chain reorganisation** and assert the database matches the node afterwards. They also exercise every API endpoint against a seeded Postgres through the read-only role.
-- **CI** (GitHub Actions) runs format, lint, type-check, build, the tests, the OpenAPI drift check and the image builds on every pull request. The regtest smoke test runs when `master` is updated.
+- **End-to-end tests** (Playwright) run against the whole Compose stack on regtest. They cover the API, the frontend's journeys (browsing, search, not found, paging, the theme, the phone layout), an API outage and recovery, and axe accessibility checks in both themes.
+- **CI** (GitHub Actions) runs format, lint, type-check, build, the tests, the OpenAPI and frontend type drift checks and the image builds on every pull request. The end-to-end suite runs when `master` is updated.
 
 ## Design decisions
 
@@ -124,7 +139,7 @@ With Podman, set `TESTCONTAINERS_RYUK_DISABLED=true` before `pnpm test`.
 | Errors           | RFC 9457 problem+json                                         | Ad hoc error bodies                                                   | A standard, predictable error format                                                                          |
 | Tooling          | ESLint + Prettier, pino, GitHub Actions                       | Biome, winston                                                        | Industry-standard choices                                                                                     |
 
-The full decision record is in [`docs/specs/01-backend-typescript-rewrite.md`](docs/specs/01-backend-typescript-rewrite.md).
+The full decision records are in [`docs/specs/01-backend-typescript-rewrite.md`](docs/specs/01-backend-typescript-rewrite.md) and, for the frontend, [`docs/specs/02-frontend.md`](docs/specs/02-frontend.md).
 
 ## Known limitations
 
@@ -140,4 +155,4 @@ Also:
 - New blocks are detected by polling, not push notifications.
 - There is no rate limiting, HTTP caching or authentication.
 
-**Not built yet:** address pages (the data model already records which input spends each output), the mempool, and live updates. The frontend is a separate project built on the OpenAPI contract.
+**Not built yet:** address pages (the data model already records which input spends each output), the mempool, and live updates. The frontend lives in `apps/web` (see [Frontend](#frontend)).
