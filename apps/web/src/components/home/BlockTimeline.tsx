@@ -8,12 +8,11 @@ import { fetchBlocks } from "@/lib/api/browser";
 import type { BlockSummary } from "@/lib/api/types";
 import { BlockCard } from "./BlockCard";
 import { BlockCardSkeleton } from "./BlockCardSkeleton";
+import { PAGE_SIZE } from "./constants";
 import { NewBlocksPill } from "./NewBlocksPill";
 import { useChainTip } from "./useChainTip";
 import styles from "./BlockTimeline.module.css";
 import timeline from "./Timeline.module.css";
-
-export const PAGE_SIZE = 10;
 
 interface Props {
   initialBlocks: BlockSummary[];
