@@ -35,3 +35,7 @@ a:hover {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+.mono {
+  font-family: var(--font-mono), monospace;
+}
