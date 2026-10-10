@@ -40,6 +40,8 @@ describe("passthrough", () => {
     [["blocks", "xyz", "transactions"]],
     [["blocks", "..", "status"]],
     [["blocks/" + HASH + "/transactions", "extra"]],
+    [["blocks/" + HASH + "/transactions"]],
+    [["blocks", HASH + "/transactions"]],
     [[]],
   ])("answers %j with a 404 problem without calling the API", async (segments) => {
     const { urls, fetchImpl } = recordingFetch();

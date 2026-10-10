@@ -21,8 +21,9 @@ export async function passthrough(
   query: URLSearchParams,
   deps: PassthroughDeps,
 ): Promise<Response> {
+  // Next decodes %2F inside a segment; a segment holding a "/" is not a real path segment.
   const path = segments.join("/");
-  if (!ALLOWED_PATHS.some((allowed) => allowed.test(path))) {
+  if (segments.some((s) => s.includes("/")) || !ALLOWED_PATHS.some((p) => p.test(path))) {
     return problem(404, "Not Found", "This endpoint isn't available here.");
   }
 
