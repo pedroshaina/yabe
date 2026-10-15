@@ -42,6 +42,11 @@
   justify-self: end;
 }
 
+/* The hash fills its column so a narrow card cuts it with an ellipsis. */
+.desktop .hash {
+  justify-self: stretch;
+}
+
 .height {
   font-family: var(--font-mono), monospace;
   font-size: 19px;
@@ -51,6 +56,7 @@
 
 .desktop .height {
   font-size: 21px;
+  line-height: 24px;
 }
 
 .time {
