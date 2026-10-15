@@ -1,4 +1,5 @@
 .header {
+  container-type: inline-size;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
@@ -62,14 +63,11 @@
 }
 
 @media (max-width: 640px) {
-  /* Prev/Next stay beside the block height instead of wrapping under it. */
-  .header:has(.nav) {
-    flex-wrap: nowrap;
-    gap: 8px;
+  .header {
+    column-gap: 8px;
   }
 
   .identity {
-    min-width: 0;
     gap: 12px;
   }
 
@@ -78,11 +76,24 @@
   }
 
   .nav {
-    flex: none;
     gap: 0;
   }
 
   .nav a {
     padding: 0 6px;
+  }
+}
+
+/* Too narrow for "← Prev / Next →" beside the height (small screen or enlarged text): arrows
+   only, as 44px square targets. The links' aria-labels still name them. Measured in em so it
+   tracks the text size. */
+@container (max-width: 20em) {
+  .nav [data-nav-word] {
+    display: none;
+  }
+
+  .nav a {
+    min-width: 44px;
+    justify-content: center;
   }
 }
