@@ -20,7 +20,7 @@ const sans = DM_Sans({ subsets: ["latin"], variable: "--font-sans" });
 const mono = DM_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
-  title: { default: "Y.A.B.E", template: "%s · Y.A.B.E" },
+  title: { default: "Y.A.B.E - Yet Another Block Explorer", template: "%s · Y.A.B.E" },
   description: "Yet Another Block Explorer",
 };
 
