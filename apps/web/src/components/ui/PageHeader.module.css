@@ -62,11 +62,27 @@
 }
 
 @media (max-width: 640px) {
+  /* Prev/Next stay beside the block height instead of wrapping under it. */
+  .header:has(.nav) {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+
   .identity {
+    min-width: 0;
     gap: 12px;
   }
 
+  .title {
+    font-size: 26px;
+  }
+
+  .nav {
+    flex: none;
+    gap: 0;
+  }
+
   .nav a {
-    padding: 0 8px;
+    padding: 0 6px;
   }
 }
