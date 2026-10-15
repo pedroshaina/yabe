@@ -7,9 +7,10 @@ on:
   push:
     branches: [master]
 
-# Each commit's tags are unique: never cancel a release in flight.
+# Releases run one at a time, in merge order; a newer pending release replaces an older
+# pending one, so an old build never lands after a new one (homelab ADR-0024).
 concurrency:
-  group: release-${{ github.sha }}
+  group: release-${{ github.repository }}
   cancel-in-progress: false
 
 permissions:
@@ -29,6 +30,11 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      indexer: ${{ steps.indexer.outputs.digest }}
+      api: ${{ steps.api.outputs.digest }}
+      migration: ${{ steps.migration.outputs.digest }}
+      web: ${{ steps.web.outputs.digest }}
     env:
       REGISTRY: ghcr.io/pedroshaina
     steps:
@@ -107,3 +113,87 @@ jobs:
               fi
             done
           } >> "$GITHUB_STEP_SUMMARY"
+
+  promote:
+    needs: publish
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Collect the digests
+        env:
+          INDEXER: ${{ needs.publish.outputs.indexer }}
+          API: ${{ needs.publish.outputs.api }}
+          MIGRATION: ${{ needs.publish.outputs.migration }}
+          WEB: ${{ needs.publish.outputs.web }}
+        run: |
+          mkdir -p digests
+          echo "yabe-indexer=$INDEXER" > digests/yabe-indexer
+          echo "yabe-api=$API" > digests/yabe-api
+          echo "yabe-db-migration=$MIGRATION" > digests/yabe-db-migration
+          echo "yabe-web=$WEB" > digests/yabe-web
+      - name: Install kustomize v5.8.1 (checksum-pinned; the version Argo CD bundles)
+        run: |
+          f=kustomize_v5.8.1_linux_amd64.tar.gz
+          curl -fsSLO "https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2Fv5.8.1/$f"
+          echo "029a7f0f4e1932c52a0476cf02a0fd855c0bb85694b82c338fc648dcb53a819d  $f" | sha256sum -c -
+          tar xzf "$f" kustomize && sudo install -m 0755 kustomize /usr/local/bin/
+      - id: token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.HOMELAB_APPS_CLIENT_ID }}
+          private-key: ${{ secrets.HOMELAB_APPS_PRIVATE_KEY }}
+          owner: pedroshaina
+          repositories: homelab-apps-gitops
+          permission-contents: write
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: pedroshaina/homelab-apps-gitops
+          ref: main
+          token: ${{ steps.token.outputs.token }}
+          path: gitops
+      - name: Pin the images
+        working-directory: gitops
+        run: |
+          k="apps/$APP/kustomization.yaml"
+          [ -f "$k" ] || { echo "::error::$k is missing in homelab-apps-gitops"; exit 1; }
+          refs=()
+          while IFS='=' read -r name digest; do
+            refs+=("$REGISTRY/$name:$GITHUB_SHA@$digest")
+          done < <(cat ../digests/*)
+          [ "${#refs[@]}" -gt 0 ] || { echo "::error::no image digests to release"; exit 1; }
+          for ref in "${refs[@]}"; do (cd "apps/$APP" && kustomize edit set image "$ref"); done
+          # kustomize edit adds an entry even if no manifest uses that image: check the render.
+          out="$(kustomize build "apps/$APP")"
+          for ref in "${refs[@]}"; do
+            grep -qF "image: $ref" <<<"$out" || { echo "::error::no manifest in apps/$APP uses ${ref%%:*}"; exit 1; }
+          done
+          changed="$(git status --porcelain)"
+          if [ -n "$changed" ] && [ "$changed" != " M $k" ]; then
+            echo "::error::unexpected changes: $changed"; exit 1
+          fi
+      - name: Commit and push
+        working-directory: gitops
+        env:
+          GH_TOKEN: ${{ steps.token.outputs.token }}
+          SLUG: ${{ steps.token.outputs.app-slug }}
+        run: |
+          if [ -z "$(git status --porcelain)" ]; then
+            echo "Already released: nothing to commit." | tee -a "$GITHUB_STEP_SUMMARY"; exit 0
+          fi
+          id="$(gh api "/users/${SLUG}%5Bbot%5D" --jq .id)"
+          git config user.name "${SLUG}[bot]"
+          git config user.email "${id}+${SLUG}[bot]@users.noreply.github.com"
+          git commit -qam "release($APP): ${GITHUB_SHA::7}" -m "Source: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA"
+          # Another app's release may land first: rebase onto it and retry. Never force-push.
+          for attempt in 1 2 3; do
+            if git push -q origin HEAD:main; then
+              echo "Released: https://github.com/pedroshaina/homelab-apps-gitops/commit/$(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            sleep $((attempt * 5))
+            git pull -q --rebase origin main
+          done
+          echo "::error::push to homelab-apps-gitops main rejected 3 times"; exit 1
+    env:
+      APP: yabe
+      REGISTRY: ghcr.io/pedroshaina
