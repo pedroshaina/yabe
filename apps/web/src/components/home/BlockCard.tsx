@@ -31,7 +31,7 @@ export function BlockCard({ block, newest, serverNow }: Props) {
   );
   const fees = (
     <span className={`${styles.stat} ${styles.mono}`}>
-      <BitcoinIcon className={styles.statIcon} />
+      <BitcoinIcon className={`${styles.statIcon} ${styles.feeIcon}`} />
       <span className="visually-hidden">Fees </span>
       {formatSbtc(block.totalFeeSat)}
       <span className="visually-hidden"> sBTC</span>
