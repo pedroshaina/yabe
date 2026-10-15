@@ -72,4 +72,3 @@ push to master ─► release workflow
 - **A new image package starts private on GitHub,** so each one is made public once, by hand, after its first publish.
 - **Images are built for `linux/amd64` only.**
 - **Promotion needs the GitHub App's credentials** in this repository's Actions settings. Without them the images are still published, but nothing is promoted.
-- **Rolling back is a revert in the GitOps repository,** and it does not undo a database migration that has already run.
