@@ -65,6 +65,8 @@
   align-items: center;
   gap: 5px;
   font-size: 13px;
+  /* A value and its unit ("696 kB") stay on one line in the phone strip. */
+  white-space: nowrap;
 }
 
 .statIcon {
@@ -100,8 +102,20 @@
   padding-top: 10px;
   border-top: 1px solid var(--line);
   display: flex;
+  /* Only on the narrowest screens: a whole stat moves down rather than overflowing the card. */
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: 8px;
+  gap: 4px 6px;
+}
+
+/* Sized so the three stats fit one line on a ~400px phone even with enlarged system text. */
+.strip .stat {
+  gap: 3px;
+  font-size: 12px;
+}
+
+.strip .mono {
+  font-size: 11px;
 }
 
 @media (max-width: 640px) {

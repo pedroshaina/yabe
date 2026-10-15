@@ -1,4 +1,5 @@
 .header {
+  container-type: inline-size;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
@@ -62,11 +63,37 @@
 }
 
 @media (max-width: 640px) {
+  .header {
+    column-gap: 8px;
+  }
+
   .identity {
     gap: 12px;
   }
 
+  .title {
+    font-size: 26px;
+  }
+
+  .nav {
+    gap: 0;
+  }
+
   .nav a {
-    padding: 0 8px;
+    padding: 0 6px;
+  }
+}
+
+/* Too narrow for "← Prev / Next →" beside the height (small screen or enlarged text): arrows
+   only, as 44px square targets. The links' aria-labels still name them. Measured in em so it
+   tracks the text size. */
+@container (max-width: 20em) {
+  .nav [data-nav-word] {
+    display: none;
+  }
+
+  .nav a {
+    min-width: 44px;
+    justify-content: center;
   }
 }

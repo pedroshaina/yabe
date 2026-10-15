@@ -12,12 +12,12 @@ export function BlockHeader({ block }: { block: Block }) {
       <>
         {prev !== null && (
           <Link href={`/block/${prev}`} aria-label={`Previous block, ${formatInteger(prev)}`}>
-            ← Prev
+            ←<span data-nav-word> Prev</span>
           </Link>
         )}
         {next !== null && (
           <Link href={`/block/${next}`} aria-label={`Next block, ${formatInteger(next)}`}>
-            Next →
+            <span data-nav-word>Next </span>→
           </Link>
         )}
       </>

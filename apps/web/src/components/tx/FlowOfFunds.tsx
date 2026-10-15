@@ -38,23 +38,33 @@ function InputCard({ input }: { input: TxInput }) {
 }
 
 function OutputCard({ output }: { output: TxOutput }) {
+  // OP_RETURN outputs (like a coinbase's witness commitment) carry data and can never be spent.
+  const isData = output.scriptType === "nulldata";
   return (
     <li className={styles.card}>
       <div className={styles.row}>
         <span className={styles.who}>
-          {output.address ? <Address address={output.address} /> : output.scriptType}
+          {output.address ? (
+            <Address address={output.address} />
+          ) : isData ? (
+            "OP_RETURN"
+          ) : (
+            output.scriptType
+          )}
         </span>
         <span className={styles.value}>{formatSbtc(output.valueSat)}</span>
       </div>
-      <div className={styles.meta}>
-        {output.spentBy ? (
-          <Link
-            href={`/tx/${output.spentBy.txid}`}
-          >{`Spent in ${shortHash(output.spentBy.txid)}`}</Link>
-        ) : (
-          "Unspent"
-        )}
-      </div>
+      {!isData && (
+        <div className={styles.meta}>
+          {output.spentBy ? (
+            <Link
+              href={`/tx/${output.spentBy.txid}`}
+            >{`Spent in ${shortHash(output.spentBy.txid)}`}</Link>
+          ) : (
+            "Unspent"
+          )}
+        </div>
+      )}
     </li>
   );
 }
