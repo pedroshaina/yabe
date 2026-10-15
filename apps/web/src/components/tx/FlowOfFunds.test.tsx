@@ -30,9 +30,16 @@ describe("FlowOfFunds", () => {
       "href",
       `/tx/${tx.outputs[0]!.spentBy!.txid}`,
     );
-    expect(within(to).getAllByText("Unspent")).toHaveLength(2);
-    expect(within(to).getByText("nulldata")).toBeInTheDocument();
+    expect(within(to).getAllByText("Unspent")).toHaveLength(1);
     expect(within(to).getByText("0.00000000")).toBeInTheDocument();
+  });
+
+  it("labels OP_RETURN outputs and gives them no spent status, since they can't be spent", () => {
+    render(<FlowOfFunds tx={tx} />);
+    const to = screen.getByRole("region", { name: /To/ });
+    const card = within(to).getByText("OP_RETURN").closest("li")!;
+    expect(card).toHaveTextContent(/^OP_RETURN0\.00000000$/);
+    expect(within(to).queryByText("nulldata")).toBeNull();
   });
 
   it("shows a coinbase input as new coins, without totals or a fee", () => {
@@ -55,6 +62,6 @@ describe("FlowOfFunds", () => {
     );
     const to = screen.getByRole("region", { name: /To/ });
     expect(within(to).getByRole("button", { name: long })).toBeInTheDocument();
-    expect(within(to).getByText("nulldata").closest("button")).toBeNull();
+    expect(within(to).getByText("OP_RETURN").closest("button")).toBeNull();
   });
 });
