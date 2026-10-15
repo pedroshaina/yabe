@@ -21,7 +21,7 @@ describe("FlowOfFunds", () => {
     expect(screen.getByText(/Fee/)).toHaveTextContent("Fee 0.00001410 sBTC · 141 vB");
   });
 
-  it("lists outputs with spent links, Unspent, and script types for addressless outputs", () => {
+  it("lists outputs with their value, spent links and Unspent", () => {
     render(<FlowOfFunds tx={tx} />);
     const to = screen.getByRole("region", { name: /To/ });
     expect(within(to).getByRole("heading")).toHaveTextContent("To · 3 outputs");
@@ -32,6 +32,13 @@ describe("FlowOfFunds", () => {
     );
     expect(within(to).getAllByText("Unspent")).toHaveLength(1);
     expect(within(to).getByText("0.00000000")).toBeInTheDocument();
+  });
+
+  it("shows other addressless outputs by script type, with their spent status", () => {
+    const bare = { ...tx.outputs[2]!, address: null, scriptType: "nonstandard" };
+    render(<FlowOfFunds tx={{ ...tx, outputs: [bare] }} />);
+    const card = within(screen.getByRole("region", { name: /To/ })).getByRole("listitem");
+    expect(card).toHaveTextContent(/^nonstandard0\.01000000Unspent$/);
   });
 
   it("labels OP_RETURN outputs and gives them no spent status, since they can't be spent", () => {
