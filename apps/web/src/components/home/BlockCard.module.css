@@ -15,26 +15,31 @@
   border-color: var(--field);
 }
 
+/* Three even rows: height, hash and fees on the left, time, transactions and size on the right. */
 .desktop {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: repeat(3, 24px);
+  grid-auto-flow: column;
+  align-items: center;
+  gap: 6px 16px;
 }
 
 .phone {
   display: none;
 }
 
+/* Groups each column for reading order; the grid places its children. */
 .column {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
+  display: contents;
 }
 
-.right {
-  flex: none;
-  align-items: flex-end;
+.column > * {
+  justify-self: start;
+}
+
+.right > * {
+  justify-self: end;
 }
 
 .height {
@@ -42,6 +47,10 @@
   font-size: 19px;
   font-weight: 500;
   color: var(--link);
+}
+
+.desktop .height {
+  font-size: 21px;
 }
 
 .time {
@@ -72,6 +81,11 @@
 .statIcon {
   flex: none;
   color: var(--muted);
+}
+
+/* The ₿ glyph sits right of centre in its box; pull it back in line with the hash above. */
+.desktop .feeIcon {
+  margin-left: -3px;
 }
 
 .unit {
