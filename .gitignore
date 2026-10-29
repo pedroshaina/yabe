@@ -114,7 +114,7 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
-# Private specs and plans (separate private repo: yabe-internal-docs)
+# Private specs and plans (separate private repo: internal-docs)
 .internal/
 
 # Local Claude Code worktrees
